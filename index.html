@@ -6,7 +6,122 @@
     <title>Sistema de Gestão de Manutenção</title>
 </head>
 <body>
-    <h1>Sistema de Gestão de Manutenção</h1>
-    <p>Bem-vindo ao sistema de manutenção.</p>
+
+    <header>
+        <h1>Sistema de Gestão de Manutenção</h1>
+        <nav>
+            <ul>
+                <li><a href="#cadastro-equipamento">Cadastrar Equipamento</a></li>
+                <li><a href="#novo-chamado">Abrir Chamado</a></li>
+                <li><a href="#lista-chamados">Lista de Chamados</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Seção 1: Cadastro de Equipamentos -->
+        <section id="cadastro-equipamento">
+            <h2>Cadastro de Equipamento</h2>
+            <form action="#">
+                <div>
+                    <label for="nome-equipamento">Nome do Equipamento:</label><br>
+                    <input type="text" id="nome-equipamento" name="nome-equipamento" placeholder="Ex: Torno CNC" required>
+                </div>
+                <br>
+                <div>
+                    <label for="codigo-tag">Código/TAG:</label><br>
+                    <input type="text" id="codigo-tag" name="codigo-tag" placeholder="Ex: EQ-001" required>
+                </div>
+                <br>
+                <div>
+                    <label for="setor">Setor / Localização:</label><br>
+                    <select id="setor" name="setor" required>
+                        <option value="">Selecione o setor...</option>
+                        <option value="producao">Produção</option>
+                        <option value="usinagem">Usinagem</option>
+                        <option value="embalagem">Embalagem</option>
+                        <option value="utilidades">Utilidades</option>
+                    </select>
+                </div>
+                <br>
+                <div>
+                    <button type="submit">Cadastrar Equipamento</button>
+                </div>
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- Seção 2: Abertura de Chamado de Manutenção -->
+        <section id="novo-chamado">
+            <h2>Abrir Chamado de Manutenção</h2>
+            <form action="#">
+                <div>
+                    <label for="equipamento-chamado">Equipamento:</label><br>
+                    <input type="text" id="equipamento-chamado" placeholder="Ex: EQ-001" required>
+                </div>
+                <br>
+                <div>
+                    <label for="tipo-manutencao">Tipo de Manutenção:</label><br>
+                    <select id="tipo-manutencao" required>
+                        <option value="corretiva">Corretiva</option>
+                        <option value="preventiva">Preventiva</option>
+                        <option value="preditiva">Preditiva</option>
+                    </select>
+                </div>
+                <br>
+                <div>
+                    <label for="prioridade">Prioridade:</label><br>
+                    <select id="prioridade" required>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente / Parada de Máquina</option>
+                    </select>
+                </div>
+                <br>
+                <div>
+                    <label for="descricao">Descrição da Falha / Problema:</label><br>
+                    <textarea id="descricao" name="descricao" rows="4" cols="50" placeholder="Descreva em detalhes o problema identificado..."></textarea>
+                </div>
+                <br>
+                <div>
+                    <button type="submit">Abrir Chamado</button>
+                </div>
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- Seção 3: Tabela de Chamados -->
+        <section id="lista-chamados">
+            <h2>Chamados Registrados</h2>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>OS #</th>
+                        <th>Equipamento</th>
+                        <th>Tipo</th>
+                        <th>Prioridade</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>001</td>
+                        <td>Torno CNC (EQ-001)</td>
+                        <td>Corretiva</td>
+                        <td>Alta</td>
+                        <td>Em Andamento</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 - Sistema de Gestão de Manutenção</p>
+    </footer>
+
 </body>
 </html>
