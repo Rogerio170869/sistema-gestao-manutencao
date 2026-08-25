@@ -1,21 +1,27 @@
-// Selecionando elementos do DOM
 const formChamado = document.querySelector('#novo-chamado form');
 const tabelaChamados = document.querySelector('#lista-chamados tbody');
 
-// Carregar chamados salvos do localStorage ou iniciar com um array vazio
 let chamados = JSON.parse(localStorage.getItem('chamados_manutencao')) || [];
 
-// Função para salvar a lista de chamados no localStorage
 function salvarChamadosNoStorage() {
     localStorage.setItem('chamados_manutencao', JSON.stringify(chamados));
 }
 
-// Função para renderizar/exibir todos os chamados na tabela
-function renderizarTabela() {
-    // Limpa a tabela atual
+// Função para atualizar os cards do Dashboard
+function atualizarDashboard() {
+    const total = chamados.length;
+    const concluidos = chamados.filter(c => c.status === 'Concluído').length;
+    const pendentes = total - concluidos;
+
+    document.getElementById('total-chamados').textContent = total;
+    document.getElementById('pendentes-chamados').textContent = pendentes;
+    document.getElementById('concluidos-chamados').textContent = concluidos;
+}
+
+// Função para renderizar a tabela com suporte a filtros
+function renderizarTabela(listaParaExibir = chamados) {
     tabelaChamados.innerHTML = '';
 
-    // Se não houver chamados no array, mostra chamado padrão da Semana 1 como exemplo inicial
     if (chamados.length === 0) {
         chamados.push({
             os: '001',
@@ -27,8 +33,10 @@ function renderizarTabela() {
         salvarChamadosNoStorage();
     }
 
-    // Percorre a lista de chamados e cria as linhas da tabela
-    chamados.forEach((chamado, index) => {
+    listaParaExibir.forEach((chamado) => {
+        // Encontrar o índice real no array principal
+        const indexReal = chamados.findIndex(c => c.os === chamado.os);
+
         const novaLinha = document.createElement('tr');
 
         novaLinha.innerHTML = `
@@ -37,37 +45,60 @@ function renderizarTabela() {
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
             <td>
-                <select onchange="alterarStatus(${index}, this.value)">
+                <select onchange="alterarStatus(${indexReal}, this.value)">
                     <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
                     <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
                     <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
                 </select>
             </td>
+            <td>
+                <button onclick="excluirChamado(${indexReal})" style="background-color: #ef4444; padding: 5px 10px;">Excluir</button>
+            </td>
         `;
 
         tabelaChamados.appendChild(novaLinha);
     });
+
+    atualizarDashboard();
 }
 
-// Função para alterar o status de um chamado
+// Função para filtrar chamados por texto e por status
+function filtrarChamados() {
+    const termoBusca = document.getElementById('filtro-busca').value.toLowerCase();
+    const statusFiltro = document.getElementById('filtro-status').value;
+
+    const chamadosFiltrados = chamados.filter(chamado => {
+        const atendeTexto = chamado.equipamento.toLowerCase().includes(termoBusca);
+        const atendeStatus = statusFiltro === 'todos' || chamado.status === statusFiltro;
+        return atendeTexto && atendeStatus;
+    });
+
+    renderizarTabela(chamadosFiltrados);
+}
+
 function alterarStatus(index, novoStatus) {
     chamados[index].status = novoStatus;
     salvarChamadosNoStorage();
+    filtrarChamados(); // Re-aplica filtros mantendo a tela atualizada
 }
 
-// Evento de submissão do formulário para adicionar novo chamado
+function excluirChamado(index) {
+    if (confirm('Tem certeza que deseja excluir esta Ordem de Serviço?')) {
+        chamados.splice(index, 1);
+        salvarChamadosNoStorage();
+        filtrarChamados();
+    }
+}
+
 formChamado.addEventListener('submit', function (event) {
     event.preventDefault();
 
-    // Capturando os dados dos campos
     const equipamentoInput = document.getElementById('equipamento-chamado').value;
     const tipoInput = document.getElementById('tipo-manutencao').value;
     const prioridadeInput = document.getElementById('prioridade').value;
 
-    // Gerando o número da nova OS
     const proximaOS = String(chamados.length + 1).padStart(3, '0');
 
-    // Formatando valores para exibição bonita
     const novoChamado = {
         os: proximaOS,
         equipamento: equipamentoInput,
@@ -76,16 +107,11 @@ formChamado.addEventListener('submit', function (event) {
         status: 'Aberto'
     };
 
-    // Adiciona ao array e salva
     chamados.push(novoChamado);
     salvarChamadosNoStorage();
+    filtrarChamados();
 
-    // Atualiza a exibição na tabela
-    renderizarTabela();
-
-    // Limpa o formulário
     formChamado.reset();
 });
 
-// Carrega os chamados assim que a página é aberta
 renderizarTabela();

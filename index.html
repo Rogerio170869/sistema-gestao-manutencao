@@ -96,29 +96,56 @@
         <hr>
 
         <!-- Seção 3: Tabela de Chamados -->
-        <section id="lista-chamados">
-            <h2>Chamados Registrados</h2>
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>OS #</th>
-                        <th>Equipamento</th>
-                        <th>Tipo</th>
-                        <th>Prioridade</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>001</td>
-                        <td>Torno CNC (EQ-001)</td>
-                        <td>Corretiva</td>
-                        <td>Alta</td>
-                        <td>Em Andamento</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+<!-- Dashboard de Indicadores -->
+    <section id="dashboard">
+        <h2>Indicadores de Manutenção</h2>
+        <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                <h3 style="color: #0369a1;">Total</h3>
+                <span id="total-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+            </div>
+            <div style="background: #fef3c7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                <h3 style="color: #b45309;">Abertos / Em Andamento</h3>
+                <span id="pendentes-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+            </div>
+            <div style="background: #dcfce7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                <h3 style="color: #15803d;">Concluídos</h3>
+                <span id="concluidos-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabela e Filtros -->
+    <section id="lista-chamados">
+        <h2>Chamados Registrados</h2>
+        
+        <!-- Filtro de Busca -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="filtro-busca" placeholder="Buscar por equipamento..." oninput="filtrarChamados()">
+            <select id="filtro-status" onchange="filtrarChamados()" style="width: 200px;">
+                <option value="todos">Todos os Status</option>
+                <option value="Aberto">Aberto</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Concluído">Concluído</option>
+            </select>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>OS #</th>
+                    <th>Equipamento</th>
+                    <th>Tipo</th>
+                    <th>Prioridade</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Linhas inseridas via JS -->
+            </tbody>
+        </table>
+    </section>
     </main>
 
     <footer>
