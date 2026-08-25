@@ -1,0 +1,25 @@
+{
+  "name": "sistema-gestao-manutencao",
+  "version": "1.0.0",
+  "description": "Projeto 1\r # Sistema de Gestão de Manutenção",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rogerio170869/sistema-gestao-manutencao.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Rogerio170869/sistema-gestao-manutencao/issues"
+  },
+  "homepage": "https://github.com/Rogerio170869/sistema-gestao-manutencao#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
