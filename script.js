@@ -1,13 +1,22 @@
-const formChamado = document.querySelector('#novo-chamado form');
+// Seleção de elementos do DOM
+const formEquipamento = document.getElementById('form-equipamento');
+const formChamado = document.getElementById('form-chamado');
 const tabelaChamados = document.querySelector('#lista-chamados tbody');
 
+// Carregar chamados e equipamentos salvos do localStorage
 let chamados = JSON.parse(localStorage.getItem('chamados_manutencao')) || [];
+let equipamentos = JSON.parse(localStorage.getItem('equipamentos_manutencao')) || [];
 
+// Salvar no LocalStorage
 function salvarChamadosNoStorage() {
     localStorage.setItem('chamados_manutencao', JSON.stringify(chamados));
 }
 
-// Função para atualizar os cards do Dashboard
+function salvarEquipamentosNoStorage() {
+    localStorage.setItem('equipamentos_manutencao', JSON.stringify(equipamentos));
+}
+
+// Atualizar Indicadores do Dashboard
 function atualizarDashboard() {
     const total = chamados.length;
     const concluidos = chamados.filter(c => c.status === 'Concluído').length;
@@ -18,25 +27,12 @@ function atualizarDashboard() {
     document.getElementById('concluidos-chamados').textContent = concluidos;
 }
 
-// Função para renderizar a tabela com suporte a filtros
+// Renderizar a tabela de chamados
 function renderizarTabela(listaParaExibir = chamados) {
     tabelaChamados.innerHTML = '';
 
-    if (chamados.length === 0) {
-        chamados.push({
-            os: '001',
-            equipamento: 'Torno CNC (EQ-001)',
-            tipo: 'Corretiva',
-            prioridade: 'Alta',
-            status: 'Em Andamento'
-        });
-        salvarChamadosNoStorage();
-    }
-
     listaParaExibir.forEach((chamado) => {
-        // Encontrar o índice real no array principal
         const indexReal = chamados.findIndex(c => c.os === chamado.os);
-
         const novaLinha = document.createElement('tr');
 
         novaLinha.innerHTML = `
@@ -52,7 +48,7 @@ function renderizarTabela(listaParaExibir = chamados) {
                 </select>
             </td>
             <td>
-                <button onclick="excluirChamado(${indexReal})" style="background-color: #ef4444; padding: 5px 10px;">Excluir</button>
+                <button onclick="excluirChamado(${indexReal})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
             </td>
         `;
 
@@ -62,7 +58,52 @@ function renderizarTabela(listaParaExibir = chamados) {
     atualizarDashboard();
 }
 
-// Função para filtrar chamados por texto e por status
+// Cadastro de Equipamento
+formEquipamento.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const nome = document.getElementById('nome-equipamento').value;
+    const tag = document.getElementById('tag-equipamento').value;
+    const setor = document.getElementById('setor-equipamento').value;
+
+    const novoEquipamento = { nome, tag, setor };
+    equipamentos.push(novoEquipamento);
+    salvarEquipamentosNoStorage();
+
+    // Auto-preenche o campo de equipamento no formulário de chamado
+    document.getElementById('equipamento-chamado').value = `${nome} (${tag})`;
+
+    alert(`Equipamento "${nome}" cadastrado com sucesso!`);
+    formEquipamento.reset();
+});
+
+// Abertura de Ordem de Serviço (Chamado)
+formChamado.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const equipamentoInput = document.getElementById('equipamento-chamado').value;
+    const tipoInput = document.getElementById('tipo-manutencao').value;
+    const prioridadeInput = document.getElementById('prioridade').value;
+
+    // Calcula a próxima OS considerando o maior valor existente ou o total do array
+    const proximaOS = String(chamados.length + 1).padStart(3, '0');
+
+    const novoChamado = {
+        os: proximaOS,
+        equipamento: equipamentoInput,
+        tipo: tipoInput,
+        prioridade: prioridadeInput,
+        status: 'Aberto'
+    };
+
+    chamados.push(novoChamado);
+    salvarChamadosNoStorage();
+    filtrarChamados();
+
+    formChamado.reset();
+});
+
+// Filtros
 function filtrarChamados() {
     const termoBusca = document.getElementById('filtro-busca').value.toLowerCase();
     const statusFiltro = document.getElementById('filtro-status').value;
@@ -76,12 +117,14 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
+// Alterar Status
 function alterarStatus(index, novoStatus) {
     chamados[index].status = novoStatus;
     salvarChamadosNoStorage();
-    filtrarChamados(); // Re-aplica filtros mantendo a tela atualizada
+    filtrarChamados();
 }
 
+// Excluir Chamado Individual
 function excluirChamado(index) {
     if (confirm('Tem certeza que deseja excluir esta Ordem de Serviço?')) {
         chamados.splice(index, 1);
@@ -90,32 +133,7 @@ function excluirChamado(index) {
     }
 }
 
-formChamado.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    const equipamentoInput = document.getElementById('equipamento-chamado').value;
-    const tipoInput = document.getElementById('tipo-manutencao').value;
-    const prioridadeInput = document.getElementById('prioridade').value;
-
-    const proximaOS = String(chamados.length + 1).padStart(3, '0');
-
-    const novoChamado = {
-        os: proximaOS,
-        equipamento: equipamentoInput,
-        tipo: tipoInput.charAt(0).toUpperCase() + tipoInput.slice(1),
-        prioridade: prioridadeInput.charAt(0).toUpperCase() + prioridadeInput.slice(1),
-        status: 'Aberto'
-    };
-
-    chamados.push(novoChamado);
-    salvarChamadosNoStorage();
-    filtrarChamados();
-
-    formChamado.reset();
-});
-
-renderizarTabela();
-// Função para exportar os chamados em formato CSV (Excel)
+// Exportar relatório em CSV
 function exportarCSV() {
     if (chamados.length === 0) {
         alert("Não há chamados para exportar!");
@@ -139,11 +157,14 @@ function exportarCSV() {
     document.body.removeChild(link);
 }
 
-// Função para apagar todo o banco de dados local
+// Limpar todos os chamados
 function limparTodosChamados() {
     if (confirm("ATENÇÃO: Tem certeza que deseja apagar TODOS os chamados registrados?")) {
         chamados = [];
-        salvarChamadosNoStorage();
+        localStorage.removeItem('chamados_manutencao');
         filtrarChamados();
     }
 }
+
+// Inicialização da tela
+renderizarTabela();

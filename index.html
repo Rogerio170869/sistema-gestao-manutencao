@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão de Manutenção</title>
-    <!-- Adicione a linha abaixo: -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,147 +14,137 @@
             <ul>
                 <li><a href="#cadastro-equipamento">Cadastrar Equipamento</a></li>
                 <li><a href="#novo-chamado">Abrir Chamado</a></li>
-                <li><a href="#lista-chamados">Lista de Chamados</a></li>
+                <li><a href="#dashboard">Indicadores</a></li>
+                <li><a href="#lista-chamados">Chamados Registrados</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <!-- Seção 1: Cadastro de Equipamentos -->
-        <section id="cadastro-equipamento">
-            <h2>Cadastro de Equipamento</h2>
-            <form action="#">
-                <div>
-                    <label for="nome-equipamento">Nome do Equipamento:</label><br>
-                    <input type="text" id="nome-equipamento" name="nome-equipamento" placeholder="Ex: Torno CNC" required>
+        <!-- Cadastro de Equipamento -->
+        <section id="cadastro-equipamento" class="card">
+            <h2>Cadastrar Novo Equipamento</h2>
+            <form id="form-equipamento">
+                <div class="form-group">
+                    <label for="nome-equipamento">Nome do Equipamento:</label>
+                    <input type="text" id="nome-equipamento" placeholder="Ex: Torno CNC" required>
                 </div>
-                <br>
-                <div>
-                    <label for="codigo-tag">Código/TAG:</label><br>
-                    <input type="text" id="codigo-tag" name="codigo-tag" placeholder="Ex: EQ-001" required>
+
+                <div class="form-group">
+                    <label for="tag-equipamento">TAG / Código:</label>
+                    <input type="text" id="tag-equipamento" placeholder="Ex: EQ-001" required>
                 </div>
-                <br>
-                <div>
-                    <label for="setor">Setor / Localização:</label><br>
-                    <select id="setor" name="setor" required>
-                        <option value="">Selecione o setor...</option>
-                        <option value="producao">Produção</option>
-                        <option value="usinagem">Usinagem</option>
-                        <option value="embalagem">Embalagem</option>
-                        <option value="utilidades">Utilidades</option>
+
+                <div class="form-group">
+                    <label for="setor-equipamento">Setor:</label>
+                    <select id="setor-equipamento" required>
+                        <option value="">Selecione o Setor</option>
+                        <option value="Usinagem">Usinagem</option>
+                        <option value="Montagem">Montagem</option>
+                        <option value="Pintura">Pintura</option>
+                        <option value="Embalagem">Embalagem</option>
+                        <option value="Utilidades">Utilidades</option>
                     </select>
                 </div>
-                <br>
-                <div>
-                    <button type="submit">Cadastrar Equipamento</button>
-                </div>
+
+                <button type="submit" class="btn-primary">Cadastrar Equipamento</button>
             </form>
         </section>
 
-        <hr>
-
-        <!-- Seção 2: Abertura de Chamado de Manutenção -->
-        <section id="novo-chamado">
+        <!-- Abertura de Chamado -->
+        <section id="novo-chamado" class="card">
             <h2>Abrir Chamado de Manutenção</h2>
-            <form action="#">
-                <div>
-                    <label for="equipamento-chamado">Equipamento:</label><br>
-                    <input type="text" id="equipamento-chamado" placeholder="Ex: EQ-001" required>
+            <form id="form-chamado">
+                <div class="form-group">
+                    <label for="equipamento-chamado">Equipamento / TAG:</label>
+                    <input type="text" id="equipamento-chamado" placeholder="Ex: Torno CNC (EQ-001)" required>
                 </div>
-                <br>
-                <div>
-                    <label for="tipo-manutencao">Tipo de Manutenção:</label><br>
+
+                <div class="form-group">
+                    <label for="tipo-manutencao">Tipo de Manutenção:</label>
                     <select id="tipo-manutencao" required>
-                        <option value="corretiva">Corretiva</option>
-                        <option value="preventiva">Preventiva</option>
-                        <option value="preditiva">Preditiva</option>
+                        <option value="">Selecione o Tipo</option>
+                        <option value="Corretiva">Corretiva</option>
+                        <option value="Preventiva">Preventiva</option>
+                        <option value="Preditiva">Preditiva</option>
                     </select>
                 </div>
-                <br>
-                <div>
-                    <label for="prioridade">Prioridade:</label><br>
+
+                <div class="form-group">
+                    <label for="prioridade">Prioridade:</label>
                     <select id="prioridade" required>
-                        <option value="baixa">Baixa</option>
-                        <option value="media">Média</option>
-                        <option value="alta">Alta</option>
-                        <option value="urgente">Urgente / Parada de Máquina</option>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
                     </select>
                 </div>
-                <br>
-                <div>
-                    <label for="descricao">Descrição da Falha / Problema:</label><br>
-                    <textarea id="descricao" name="descricao" rows="4" cols="50" placeholder="Descreva em detalhes o problema identificado..."></textarea>
+
+                <div class="form-group">
+                    <label for="descricao-falha">Descrição da Falha / Problema:</label>
+                    <textarea id="descricao-falha" rows="4" placeholder="Descreva em detalhes o problema identificado..."></textarea>
                 </div>
-                <br>
-                <div>
-                    <button type="submit">Abrir Chamado</button>
-                </div>
+
+                <button type="submit" class="btn-primary">Abrir Chamado</button>
             </form>
         </section>
 
-        <hr>
-
-        <!-- Seção 3: Tabela de Chamados -->
-<!-- Dashboard de Indicadores -->
-    <section id="dashboard">
-        <h2>Indicadores de Manutenção</h2>
-        <div style="display: flex; gap: 15px; margin-top: 10px;">
-            <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
-                <h3 style="color: #0369a1;">Total</h3>
-                <span id="total-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+        <!-- Dashboard de Indicadores -->
+        <section id="dashboard" class="card">
+            <h2>Indicadores de Manutenção</h2>
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+                <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                    <h3 style="color: #0369a1; margin: 0;">Total</h3>
+                    <span id="total-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+                </div>
+                <div style="background: #fef3c7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                    <h3 style="color: #b45309; margin: 0;">Abertos / Em Andamento</h3>
+                    <span id="pendentes-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+                </div>
+                <div style="background: #dcfce7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
+                    <h3 style="color: #15803d; margin: 0;">Concluídos</h3>
+                    <span id="concluidos-chamados" style="font-size: 24px; font-weight: bold;">0</span>
+                </div>
             </div>
-            <div style="background: #fef3c7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
-                <h3 style="color: #b45309;">Abertos / Em Andamento</h3>
-                <span id="pendentes-chamados" style="font-size: 24px; font-weight: bold;">0</span>
-            </div>
-            <div style="background: #dcfce7; padding: 15px; border-radius: 6px; flex: 1; text-align: center;">
-                <h3 style="color: #15803d;">Concluídos</h3>
-                <span id="concluidos-chamados" style="font-size: 24px; font-weight: bold;">0</span>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Tabela e Filtros -->
-    <section id="lista-chamados">
-        <h2>Chamados Registrados</h2>
-        
-        <!-- Filtro de Busca -->
-<!-- Filtros e Botões de Ação -->
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-            <input type="text" id="filtro-busca" placeholder="Buscar por equipamento..." oninput="filtrarChamados()" style="flex: 2;">
-            <select id="filtro-status" onchange="filtrarChamados()" style="flex: 1;">
-                <option value="todos">Todos os Status</option>
-                <option value="Aberto">Aberto</option>
-                <option value="Em Andamento">Em Andamento</option>
-                <option value="Concluído">Concluído</option>
-            </select>
-            <button onclick="exportarCSV()" style="background-color: #16a34a;">Exportar CSV</button>
-            <button onclick="limparTodosChamados()" style="background-color: #dc2626;">Limpar Tudo</button>
-        </div>
+        <!-- Tabela e Filtros -->
+        <section id="lista-chamados" class="card">
+            <h2>Chamados Registrados</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <input type="text" id="filtro-busca" placeholder="Buscar por equipamento..." oninput="filtrarChamados()" style="flex: 2;">
+                <select id="filtro-status" onchange="filtrarChamados()" style="flex: 1;">
+                    <option value="todos">Todos os Status</option>
+                    <option value="Aberto">Aberto</option>
+                    <option value="Em Andamento">Em Andamento</option>
+                    <option value="Concluído">Concluído</option>
+                </select>
+                <button onclick="exportarCSV()" style="background-color: #16a34a; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Exportar CSV</button>
+                <button onclick="limparTodosChamados()" style="background-color: #dc2626; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Limpar Tudo</button>
+            </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>OS #</th>
-                    <th>Equipamento</th>
-                    <th>Tipo</th>
-                    <th>Prioridade</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Linhas inseridas via JS -->
-            </tbody>
-        </table>
-    </section>
+            <table>
+                <thead>
+                    <tr>
+                        <th>OS #</th>
+                        <th>Equipamento</th>
+                        <th>Tipo</th>
+                        <th>Prioridade</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Linhas inseridas dinamicamente via JS -->
+                </tbody>
+            </table>
+        </section>
     </main>
 
     <footer>
         <p>&copy; 2026 - Sistema de Gestão de Manutenção</p>
     </footer>
 
-<!-- Conexão com o arquivo JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
