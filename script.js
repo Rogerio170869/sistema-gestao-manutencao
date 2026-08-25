@@ -115,3 +115,35 @@ formChamado.addEventListener('submit', function (event) {
 });
 
 renderizarTabela();
+// Função para exportar os chamados em formato CSV (Excel)
+function exportarCSV() {
+    if (chamados.length === 0) {
+        alert("Não há chamados para exportar!");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "OS,Equipamento,Tipo,Prioridade,Status\n";
+
+    chamados.forEach(c => {
+        csvContent += `"${c.os}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "relatorio_manutencao.csv");
+    document.body.appendChild(link);
+
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Função para apagar todo o banco de dados local
+function limparTodosChamados() {
+    if (confirm("ATENÇÃO: Tem certeza que deseja apagar TODOS os chamados registrados?")) {
+        chamados = [];
+        salvarChamadosNoStorage();
+        filtrarChamados();
+    }
+}
