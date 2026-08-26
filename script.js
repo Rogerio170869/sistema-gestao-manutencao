@@ -1,4 +1,3 @@
-// URL base do servidor Node.js
 const API_URL = 'http://localhost:3000/api/chamados';
 
 const formEquipamento = document.getElementById('form-equipamento');
@@ -59,7 +58,20 @@ function renderizarTabela(listaParaExibir = chamados) {
     atualizarDashboard();
 }
 
-// 4. Cadastrar Novo Chamado via API (POST)
+// 4. Cadastro de Equipamento (Preenche automaticamente o campo do chamado)
+formEquipamento.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const nome = document.getElementById('nome-equipamento').value;
+    const tag = document.getElementById('tag-equipamento').value;
+
+    document.getElementById('equipamento-chamado').value = `${nome} (${tag})`;
+
+    alert(`Equipamento "${nome}" selecionado! Agora preencha os detalhes do chamado abaixo.`);
+    formEquipamento.reset();
+});
+
+// 5. Cadastrar Novo Chamado via API (POST)
 formChamado.addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -89,7 +101,7 @@ formChamado.addEventListener('submit', async function (event) {
     }
 });
 
-// 5. Alterar Status via API (PUT)
+// 6. Alterar Status via API (PUT)
 async function alterarStatus(os, novoStatus) {
     try {
         const resposta = await fetch(`${API_URL}/${os}`, {
@@ -106,7 +118,7 @@ async function alterarStatus(os, novoStatus) {
     }
 }
 
-// 6. Excluir Chamado via API (DELETE)
+// 7. Excluir Chamado via API (DELETE)
 async function excluirChamado(os) {
     if (confirm(`Tem certeza que deseja excluir a OS #${os}?`)) {
         try {
@@ -123,7 +135,7 @@ async function excluirChamado(os) {
     }
 }
 
-// 7. Filtrar localmente
+// 8. Filtrar localmente
 function filtrarChamados() {
     const termoBusca = document.getElementById('filtro-busca').value.toLowerCase();
     const statusFiltro = document.getElementById('filtro-status').value;
@@ -137,5 +149,29 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
-// Carregar dados iniciais do servidor
+// 9. Exportar CSV
+function exportarCSV() {
+    if (chamados.length === 0) {
+        alert("Não há chamados para exportar!");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "OS,Equipamento,Tipo,Prioridade,Status\n";
+
+    chamados.forEach(c => {
+        csvContent += `"${c.os}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "relatorio_manutencao.csv");
+    document.body.appendChild(link);
+
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Carregar dados iniciais
 carregarChamadosDaAPI();
