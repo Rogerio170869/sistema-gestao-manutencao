@@ -36,19 +36,19 @@ function renderizarTabela(listaParaExibir = chamados) {
         const novaLinha = document.createElement('tr');
 
         novaLinha.innerHTML = `
-            <td>${chamado.os}</td>
+            <td>${chamado.os || String(chamado.id).padStart(3, '0')}</td>
             <td>${chamado.equipamento}</td>
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
             <td>
-                <select onchange="alterarStatus('${chamado.os}', this.value)">
+                <select onchange="alterarStatus(${chamado.id}, this.value)">
                     <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
                     <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
                     <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
                 </select>
             </td>
             <td>
-                <button onclick="excluirChamado('${chamado.os}')" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
+                <button onclick="excluirChamado(${chamado.id})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
             </td>
         `;
 
@@ -58,7 +58,7 @@ function renderizarTabela(listaParaExibir = chamados) {
     atualizarDashboard();
 }
 
-// 4. Cadastro de Equipamento (Preenche automaticamente o campo do chamado)
+// 4. Preenchimento rápido pelo Cadastro de Equipamentos
 formEquipamento.addEventListener('submit', function (event) {
     event.preventDefault();
 
@@ -66,8 +66,7 @@ formEquipamento.addEventListener('submit', function (event) {
     const tag = document.getElementById('tag-equipamento').value;
 
     document.getElementById('equipamento-chamado').value = `${nome} (${tag})`;
-
-    alert(`Equipamento "${nome}" selecionado! Agora preencha os detalhes do chamado abaixo.`);
+    alert(`Equipamento "${nome}" selecionado para o chamado!`);
     formEquipamento.reset();
 });
 
@@ -102,9 +101,9 @@ formChamado.addEventListener('submit', async function (event) {
 });
 
 // 6. Alterar Status via API (PUT)
-async function alterarStatus(os, novoStatus) {
+async function alterarStatus(id, novoStatus) {
     try {
-        const resposta = await fetch(`${API_URL}/${os}`, {
+        const resposta = await fetch(`${API_URL}/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: novoStatus })
@@ -119,10 +118,10 @@ async function alterarStatus(os, novoStatus) {
 }
 
 // 7. Excluir Chamado via API (DELETE)
-async function excluirChamado(os) {
-    if (confirm(`Tem certeza que deseja excluir a OS #${os}?`)) {
+async function excluirChamado(id) {
+    if (confirm(`Tem certeza que deseja excluir o chamado #${id}?`)) {
         try {
-            const resposta = await fetch(`${API_URL}/${os}`, {
+            const resposta = await fetch(`${API_URL}/${id}`, {
                 method: 'DELETE'
             });
 
@@ -141,7 +140,7 @@ function filtrarChamados() {
     const statusFiltro = document.getElementById('filtro-status').value;
 
     const chamadosFiltrados = chamados.filter(chamado => {
-        const atendeTexto = chamado.equipamento.toLowerCase().includes(termoBusca);
+        const atendeTexto = chamado.equipamento ? chamado.equipamento.toLowerCase().includes(termoBusca) : true;
         const atendeStatus = statusFiltro === 'todos' || chamado.status === statusFiltro;
         return atendeTexto && atendeStatus;
     });
@@ -149,7 +148,7 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
-// 9. Exportar CSV
+// 9. Exportar para CSV
 function exportarCSV() {
     if (chamados.length === 0) {
         alert("Não há chamados para exportar!");
@@ -160,7 +159,8 @@ function exportarCSV() {
     csvContent += "OS,Equipamento,Tipo,Prioridade,Status\n";
 
     chamados.forEach(c => {
-        csvContent += `"${c.os}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
+        const os = c.os || String(c.id).padStart(3, '0');
+        csvContent += `"${os}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -173,5 +173,5 @@ function exportarCSV() {
     document.body.removeChild(link);
 }
 
-// Carregar dados iniciais
+// Inicializar carregando chamados
 carregarChamadosDaAPI();
