@@ -8,7 +8,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Conexão com o banco de dados
 const db = new sqlite3.Database('./manutencao.db', (err) => {
     if (err) {
         console.error('Erro ao conectar ao SQLite:', err.message);
@@ -17,7 +16,7 @@ const db = new sqlite3.Database('./manutencao.db', (err) => {
     }
 });
 
-// Tabela estruturada com ID autoincremento e campo OS formatado
+// Criar tabela incluindo colunas para datas de abertura e conclusão
 db.run(`
     CREATE TABLE IF NOT EXISTS chamados (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +24,9 @@ db.run(`
         equipamento TEXT,
         tipo TEXT,
         prioridade TEXT,
-        status TEXT
+        status TEXT,
+        data_abertura TEXT,
+        data_conclusao TEXT
     )
 `);
 
@@ -40,14 +41,14 @@ app.get('/api/chamados', (req, res) => {
     });
 });
 
-// 2. Rota para criar chamado (POST)
+// 2. Rota para criar chamado com data_abertura automática (POST)
 app.post('/api/chamados', (req, res) => {
     const { equipamento, tipo, prioridade } = req.body;
     const status = 'Aberto';
+    const dataAbertura = new Date().toISOString(); // Formato ISO para facilitarmos cálculos
 
-    // Insere o chamado e usa a chave primaria ID para formatar a OS
-    const sql = `INSERT INTO chamados (equipamento, tipo, prioridade, status) VALUES (?, ?, ?, ?)`;
-    db.run(sql, [equipamento, tipo, prioridade, status], function (err) {
+    const sql = `INSERT INTO chamados (equipamento, tipo, prioridade, status, data_abertura, data_conclusao) VALUES (?, ?, ?, ?, ?, NULL)`;
+    db.run(sql, [equipamento, tipo, prioridade, status, dataAbertura], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -56,29 +57,42 @@ app.post('/api/chamados', (req, res) => {
         const idInserido = this.lastID;
         const osFormatada = String(idInserido).padStart(3, '0');
 
-        // Atualiza a OS com base no ID autoincrementado
         db.run(`UPDATE chamados SET os = ? WHERE id = ?`, [osFormatada, idInserido], (errUpdate) => {
             if (errUpdate) {
                 res.status(500).json({ error: errUpdate.message });
                 return;
             }
-            res.status(201).json({ id: idInserido, os: osFormatada, equipamento, tipo, prioridade, status });
+            res.status(201).json({ 
+                id: idInserido, 
+                os: osFormatada, 
+                equipamento, 
+                tipo, 
+                prioridade, 
+                status, 
+                data_abertura: dataAbertura, 
+                data_conclusao: null 
+            });
         });
     });
 });
 
-// 3. Rota para alterar status (PUT)
+// 3. Rota para alterar status e registrar data_conclusao ao encerrar (PUT)
 app.put('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const sql = `UPDATE chamados SET status = ? WHERE id = ?`;
-    db.run(sql, [status, id], function (err) {
+    let dataConclusao = null;
+    if (status === 'Concluído') {
+        dataConclusao = new Date().toISOString();
+    }
+
+    const sql = `UPDATE chamados SET status = ?, data_conclusao = CASE WHEN ? = 'Concluído' THEN ? ELSE NULL END WHERE id = ?`;
+    db.run(sql, [status, status, dataConclusao, id], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json({ id, status });
+        res.json({ id, status, data_conclusao: dataConclusao });
     });
 });
 
@@ -87,7 +101,7 @@ app.delete('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
 
     const sql = `DELETE FROM chamados WHERE id = ?`;
-    db.run(sql, [id], function (err) {
+    db.run(sql, [os = id], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;

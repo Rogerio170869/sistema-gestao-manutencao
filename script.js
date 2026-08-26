@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEquipamento = document.getElementById('form-equipamento');
     const formChamado = document.getElementById('form-chamado');
 
-    // 1. Ouvinte para o Cadastro de Equipamentos (Preenchimento Rápido)
+    // 1. Ouvinte para o Cadastro de Equipamentos
     if (formEquipamento) {
         formEquipamento.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -75,21 +75,46 @@ async function carregarChamadosDaAPI() {
     }
 }
 
-// 4. Atualizar os números do Dashboard de Indicadores
+// Formatar datas para exibição legível (DD/MM/AAAA HH:mm)
+function formatarData(isoString) {
+    if (!isoString) return '-';
+    const data = new Date(isoString);
+    return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+// 4. Atualizar os números do Dashboard de Indicadores (incluindo MTTR)
 function atualizarDashboard() {
     const totalElemento = document.getElementById('total-chamados');
     const pendentesElemento = document.getElementById('pendentes-chamados');
     const concluidosElemento = document.getElementById('concluidos-chamados');
+    const mttrElemento = document.getElementById('mttr-chamados');
 
     if (!totalElemento) return;
 
     const total = chamados.length;
-    const concluidos = chamados.filter(c => c.status === 'Concluído').length;
-    const pendentes = total - concluidos;
+    const chamadosConcluidos = chamados.filter(c => c.status === 'Concluído');
+    const concluidosCount = chamadosConcluidos.length;
+    const pendentesCount = total - concluidosCount;
+
+    // Cálculo do MTTR (Tempo Médio para Reparo em Horas)
+    let mttrTexto = '0h';
+    if (concluidosCount > 0) {
+        const totalHoras = chamadosConcluidos.reduce((acc, c) => {
+            if (c.data_abertura && c.data_conclusao) {
+                const diffMs = new Date(c.data_conclusao) - new Date(c.data_abertura);
+                return acc + (diffMs / (1000 * 60 * 60)); // Converte milissegundos para horas
+            }
+            return acc;
+        }, 0);
+
+        const mttrMedio = (totalHoras / concluidosCount).toFixed(1);
+        mttrTexto = `${mttrMedio}h`;
+    }
 
     totalElemento.textContent = total;
-    pendentesElemento.textContent = pendentes;
-    concluidosElemento.textContent = concluidos;
+    pendentesElemento.textContent = pendentesCount;
+    concluidosElemento.textContent = concluidosCount;
+    if (mttrElemento) mttrElemento.textContent = mttrTexto;
 }
 
 // 5. Desenhar as linhas da tabela no HTML
@@ -105,6 +130,7 @@ function renderizarTabela(listaParaExibir = chamados) {
 
         novaLinha.innerHTML = `
             <td>${osFormatada}</td>
+            <td>${formatarData(chamado.data_abertura)}</td>
             <td>${chamado.equipamento}</td>
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
@@ -160,18 +186,34 @@ async function excluirChamado(id) {
     }
 }
 
-// 8. Pesquisar e Filtrar Chamados
+// 8. Pesquisar e Filtrar Chamados (Texto, Status e Período de Datas)
 function filtrarChamados() {
     const campoBusca = document.getElementById('filtro-busca');
     const campoStatus = document.getElementById('filtro-status');
+    const campoDataInicio = document.getElementById('filtro-data-inicio');
+    const campoDataFim = document.getElementById('filtro-data-fim');
 
     const termoBusca = campoBusca ? campoBusca.value.toLowerCase() : '';
     const statusFiltro = campoStatus ? campoStatus.value : 'todos';
+    const dataInicio = campoDataInicio && campoDataInicio.value ? new Date(campoDataInicio.value) : null;
+    const dataFim = campoDataFim && campoDataFim.value ? new Date(campoDataFim.value) : null;
+
+    if (dataFim) {
+        dataFim.setHours(23, 59, 59, 999); // Incluir todo o dia de término
+    }
 
     const chamadosFiltrados = chamados.filter(chamado => {
         const atendeTexto = chamado.equipamento ? chamado.equipamento.toLowerCase().includes(termoBusca) : true;
         const atendeStatus = statusFiltro === 'todos' || chamado.status === statusFiltro;
-        return atendeTexto && atendeStatus;
+
+        let atendeData = true;
+        if (chamado.data_abertura) {
+            const dataChamado = new Date(chamado.data_abertura);
+            if (dataInicio && dataChamado < dataInicio) atendeData = false;
+            if (dataFim && dataChamado > dataFim) atendeData = false;
+        }
+
+        return atendeTexto && atendeStatus && atendeData;
     });
 
     renderizarTabela(chamadosFiltrados);
@@ -185,11 +227,12 @@ function exportarCSV() {
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "OS,Equipamento,Tipo,Prioridade,Status\n";
+    csvContent += "OS,Data Abertura,Equipamento,Tipo,Prioridade,Status\n";
 
     chamados.forEach(c => {
         const os = c.os || String(c.id).padStart(3, '0');
-        csvContent += `"${os}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
+        const dataFormatada = formatarData(c.data_abertura);
+        csvContent += `"${os}","${dataFormatada}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
