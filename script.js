@@ -1,42 +1,110 @@
 const API_URL = 'http://localhost:3000/api/chamados';
 
-const formEquipamento = document.getElementById('form-equipamento');
-const formChamado = document.getElementById('form-chamado');
-const tabelaChamados = document.querySelector('#lista-chamados tbody');
-
 let chamados = [];
 
-// 1. Carregar chamados da API REST (GET)
+// Aguarda o HTML carregar completamente antes de interagir com o DOM
+document.addEventListener('DOMContentLoaded', () => {
+    const formEquipamento = document.getElementById('form-equipamento');
+    const formChamado = document.getElementById('form-chamado');
+
+    // 1. Ouvinte para o Cadastro de Equipamentos (Preenchimento Rápido)
+    if (formEquipamento) {
+        formEquipamento.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const nome = document.getElementById('nome-equipamento').value;
+            const tag = document.getElementById('tag-equipamento').value;
+
+            const campoEquipamentoChamado = document.getElementById('equipamento-chamado');
+            if (campoEquipamentoChamado) {
+                campoEquipamentoChamado.value = `${nome} (${tag})`;
+            }
+
+            alert(`Equipamento "${nome}" preenchido na abertura de chamado abaixo!`);
+            formEquipamento.reset();
+        });
+    }
+
+    // 2. Ouvinte para Abertura de Chamado via API REST (POST)
+    if (formChamado) {
+        formChamado.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const equipamentoInput = document.getElementById('equipamento-chamado').value;
+            const tipoInput = document.getElementById('tipo-manutencao').value;
+            const prioridadeInput = document.getElementById('prioridade').value;
+
+            const novoChamado = {
+                equipamento: equipamentoInput,
+                tipo: tipoInput,
+                prioridade: prioridadeInput
+            };
+
+            try {
+                const resposta = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(novoChamado)
+                });
+
+                if (resposta.ok) {
+                    formChamado.reset();
+                    carregarChamadosDaAPI();
+                } else {
+                    alert('Erro ao salvar chamado no servidor.');
+                }
+            } catch (erro) {
+                console.error('Erro de conexão ao abrir chamado:', erro);
+                alert('Servidor fora do ar! Verifique se o "node server.js" está rodando.');
+            }
+        });
+    }
+
+    // Carregar chamados assim que a página é aberta
+    carregarChamadosDaAPI();
+});
+
+// 3. Buscar chamados da API REST (GET)
 async function carregarChamadosDaAPI() {
     try {
         const resposta = await fetch(API_URL);
         chamados = await resposta.json();
         filtrarChamados();
     } catch (erro) {
-        console.error('Erro ao conectar com a API:', erro);
+        console.error('Erro ao buscar chamados da API:', erro);
     }
 }
 
-// 2. Atualizar indicadores do Dashboard
+// 4. Atualizar os números do Dashboard de Indicadores
 function atualizarDashboard() {
+    const totalElemento = document.getElementById('total-chamados');
+    const pendentesElemento = document.getElementById('pendentes-chamados');
+    const concluidosElemento = document.getElementById('concluidos-chamados');
+
+    if (!totalElemento) return;
+
     const total = chamados.length;
     const concluidos = chamados.filter(c => c.status === 'Concluído').length;
     const pendentes = total - concluidos;
 
-    document.getElementById('total-chamados').textContent = total;
-    document.getElementById('pendentes-chamados').textContent = pendentes;
-    document.getElementById('concluidos-chamados').textContent = concluidos;
+    totalElemento.textContent = total;
+    pendentesElemento.textContent = pendentes;
+    concluidosElemento.textContent = concluidos;
 }
 
-// 3. Renderizar a tabela na tela
+// 5. Desenhar as linhas da tabela no HTML
 function renderizarTabela(listaParaExibir = chamados) {
+    const tabelaChamados = document.querySelector('#lista-chamados tbody');
+    if (!tabelaChamados) return;
+
     tabelaChamados.innerHTML = '';
 
     listaParaExibir.forEach((chamado) => {
         const novaLinha = document.createElement('tr');
+        const osFormatada = chamado.os || String(chamado.id).padStart(3, '0');
 
         novaLinha.innerHTML = `
-            <td>${chamado.os || String(chamado.id).padStart(3, '0')}</td>
+            <td>${osFormatada}</td>
             <td>${chamado.equipamento}</td>
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
@@ -58,49 +126,7 @@ function renderizarTabela(listaParaExibir = chamados) {
     atualizarDashboard();
 }
 
-// 4. Preenchimento rápido pelo Cadastro de Equipamentos
-formEquipamento.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    const nome = document.getElementById('nome-equipamento').value;
-    const tag = document.getElementById('tag-equipamento').value;
-
-    document.getElementById('equipamento-chamado').value = `${nome} (${tag})`;
-    alert(`Equipamento "${nome}" selecionado para o chamado!`);
-    formEquipamento.reset();
-});
-
-// 5. Cadastrar Novo Chamado via API (POST)
-formChamado.addEventListener('submit', async function (event) {
-    event.preventDefault();
-
-    const equipamentoInput = document.getElementById('equipamento-chamado').value;
-    const tipoInput = document.getElementById('tipo-manutencao').value;
-    const prioridadeInput = document.getElementById('prioridade').value;
-
-    const novoChamado = {
-        equipamento: equipamentoInput,
-        tipo: tipoInput,
-        prioridade: prioridadeInput
-    };
-
-    try {
-        const resposta = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(novoChamado)
-        });
-
-        if (resposta.ok) {
-            formChamado.reset();
-            carregarChamadosDaAPI();
-        }
-    } catch (erro) {
-        console.error('Erro ao abrir chamado:', erro);
-    }
-});
-
-// 6. Alterar Status via API (PUT)
+// 6. Atualizar Status via API (PUT)
 async function alterarStatus(id, novoStatus) {
     try {
         const resposta = await fetch(`${API_URL}/${id}`, {
@@ -134,10 +160,13 @@ async function excluirChamado(id) {
     }
 }
 
-// 8. Filtrar localmente
+// 8. Pesquisar e Filtrar Chamados
 function filtrarChamados() {
-    const termoBusca = document.getElementById('filtro-busca').value.toLowerCase();
-    const statusFiltro = document.getElementById('filtro-status').value;
+    const campoBusca = document.getElementById('filtro-busca');
+    const campoStatus = document.getElementById('filtro-status');
+
+    const termoBusca = campoBusca ? campoBusca.value.toLowerCase() : '';
+    const statusFiltro = campoStatus ? campoStatus.value : 'todos';
 
     const chamadosFiltrados = chamados.filter(chamado => {
         const atendeTexto = chamado.equipamento ? chamado.equipamento.toLowerCase().includes(termoBusca) : true;
@@ -148,7 +177,7 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
-// 9. Exportar para CSV
+// 9. Exportar tabela para arquivo CSV
 function exportarCSV() {
     if (chamados.length === 0) {
         alert("Não há chamados para exportar!");
@@ -172,6 +201,3 @@ function exportarCSV() {
     link.click();
     document.body.removeChild(link);
 }
-
-// Inicializar carregando chamados
-carregarChamadosDaAPI();
