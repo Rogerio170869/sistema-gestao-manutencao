@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resposta.ok) {
                     const dados = await resposta.json();
                     usuarioLogado = dados.usuario;
-                    localStorage.setItem('usuario_gestao_manutencao', JSON.stringify(usuarioLogado));
+                    // Salva na sessão temporária (apaga ao fechar a aba/navegador)
+                    sessionStorage.setItem('usuario_gestao_manutencao', JSON.stringify(usuarioLogado));
                     iniciarSistema();
                 } else {
                     alert('Usuário ou senha incorretos.');
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function verificarSessao() {
-    const usuarioSalvo = localStorage.getItem('usuario_gestao_manutencao');
+    const usuarioSalvo = sessionStorage.getItem('usuario_gestao_manutencao');
     if (usuarioSalvo) {
         usuarioLogado = JSON.parse(usuarioSalvo);
         iniciarSistema();
@@ -140,7 +141,7 @@ function iniciarSistema() {
 }
 
 function fazerLogout() {
-    localStorage.removeItem('usuario_gestao_manutencao');
+    sessionStorage.removeItem('usuario_gestao_manutencao');
     usuarioLogado = null;
     location.reload();
 }
@@ -259,7 +260,7 @@ function renderizarTabela(listaParaExibir = chamados) {
 
         if (isGestor) {
             celulaStatus = `
-                <select onchange="alterarStatus(${chamado.id}, this.value)">
+                <select id="status-chamado-${chamado.id}" name="status_chamado_${chamado.id}" onchange="alterarStatus(${chamado.id}, this.value)">
                     <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
                     <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
                     <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
