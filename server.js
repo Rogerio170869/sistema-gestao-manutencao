@@ -8,7 +8,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Conexão com o banco de dados
 const db = new sqlite3.Database('./manutencao.db', (err) => {
     if (err) {
         console.error('Erro ao conectar ao SQLite:', err.message);
@@ -17,19 +16,28 @@ const db = new sqlite3.Database('./manutencao.db', (err) => {
     }
 });
 
-// Tabela estruturada com ID autoincremento e campo OS formatado
-db.run(`
-    CREATE TABLE IF NOT EXISTS chamados (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        os TEXT,
-        equipamento TEXT,
-        tipo TEXT,
-        prioridade TEXT,
-        status TEXT
-    )
-`);
+// Criar tabela e garantir que as novas colunas existam
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS chamados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            os TEXT,
+            equipamento TEXT,
+            tipo TEXT,
+            prioridade TEXT,
+            status TEXT,
+            data_abertura TEXT,
+            data_conclusao TEXT,
+            tecnico TEXT,
+            descricao_solucao TEXT
+        )
+    `);
 
-// 1. Rota para listar chamados (GET)
+    // Adiciona as colunas caso a tabela antiga não as tenha
+    db.run(`ALTER TABLE chamados ADD COLUMN tecnico TEXT`, () => {});
+    db.run(`ALTER TABLE chamados ADD COLUMN descricao_solucao TEXT`, () => {});
+});
+// 1. Listar chamados (GET)
 app.get('/api/chamados', (req, res) => {
     db.all('SELECT * FROM chamados ORDER BY id DESC', [], (err, rows) => {
         if (err) {
@@ -40,14 +48,14 @@ app.get('/api/chamados', (req, res) => {
     });
 });
 
-// 2. Rota para criar chamado (POST)
+// 2. Criar chamado (POST)
 app.post('/api/chamados', (req, res) => {
     const { equipamento, tipo, prioridade } = req.body;
     const status = 'Aberto';
+    const dataAbertura = new Date().toISOString();
 
-    // Insere o chamado e usa a chave primaria ID para formatar a OS
-    const sql = `INSERT INTO chamados (equipamento, tipo, prioridade, status) VALUES (?, ?, ?, ?)`;
-    db.run(sql, [equipamento, tipo, prioridade, status], function (err) {
+    const sql = `INSERT INTO chamados (equipamento, tipo, prioridade, status, data_abertura, data_conclusao, tecnico, descricao_solucao) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)`;
+    db.run(sql, [equipamento, tipo, prioridade, status, dataAbertura], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -56,42 +64,66 @@ app.post('/api/chamados', (req, res) => {
         const idInserido = this.lastID;
         const osFormatada = String(idInserido).padStart(3, '0');
 
-        // Atualiza a OS com base no ID autoincrementado
         db.run(`UPDATE chamados SET os = ? WHERE id = ?`, [osFormatada, idInserido], (errUpdate) => {
             if (errUpdate) {
                 res.status(500).json({ error: errUpdate.message });
                 return;
             }
-            res.status(201).json({ id: idInserido, os: osFormatada, equipamento, tipo, prioridade, status });
+            res.status(201).json({ 
+                id: idInserido, 
+                os: osFormatada, 
+                equipamento, 
+                tipo, 
+                prioridade, 
+                status, 
+                data_abertura: dataAbertura, 
+                data_conclusao: null,
+                tecnico: null,
+                descricao_solucao: null
+            });
         });
     });
 });
 
-// 3. Rota para alterar status (PUT)
+// 3. Atualizar status, técnico e solução (PUT)
 app.put('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, tecnico, descricao_solucao } = req.body;
 
-    const sql = `UPDATE chamados SET status = ? WHERE id = ?`;
-    db.run(sql, [status, id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json({ id, status });
+    // Se estiver apenas alterando o status pelo <select> rápido da tabela
+    if (status !== undefined && tecnico === undefined) {
+        let dataConclusao = status === 'Concluído' ? new Date().toISOString() : null;
+        const sql = `UPDATE chamados SET status = ?, data_conclusao = CASE WHEN ? = 'Concluído' THEN ? ELSE NULL END WHERE id = ?`;
+        db.run(sql, [status, status, dataConclusao, id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ id, status, data_conclusao: dataConclusao });
+        });
+        return;
+    }
+
+    // Atualização completa via Modal de Edição
+    let dataConclusao = status === 'Concluído' ? new Date().toISOString() : null;
+    const sql = `
+        UPDATE chamados 
+        SET status = ?, 
+            tecnico = ?, 
+            descricao_solucao = ?, 
+            data_conclusao = CASE WHEN ? = 'Concluído' THEN COALESCE(data_conclusao, ?) ELSE NULL END 
+        WHERE id = ?
+    `;
+
+    db.run(sql, [status, tecnico, descricao_solucao, status, dataConclusao, id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id, status, tecnico, descricao_solucao, data_conclusao: dataConclusao });
     });
 });
 
-// 4. Rota para deletar chamado (DELETE)
+// 4. Deletar chamado (DELETE)
 app.delete('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
-
     const sql = `DELETE FROM chamados WHERE id = ?`;
     db.run(sql, [id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ mensagem: 'Chamado excluído com sucesso' });
     });
 });
