@@ -17,21 +17,56 @@ const db = new sqlite3.Database('./manutencao.db', (err) => {
     }
 });
 
-// Criar tabela incluindo colunas de técnico e solução
-db.run(`
-    CREATE TABLE IF NOT EXISTS chamados (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        os TEXT,
-        equipamento TEXT,
-        tipo TEXT,
-        prioridade TEXT,
-        status TEXT,
-        data_abertura TEXT,
-        data_conclusao TEXT,
-        tecnico TEXT,
-        descricao_solucao TEXT
-    )
-`);
+// Inicialização e Estrutura das Tabelas
+db.serialize(() => {
+    // Tabela de Chamados
+    db.run(`
+        CREATE TABLE IF NOT EXISTS chamados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            os TEXT,
+            equipamento TEXT,
+            tipo TEXT,
+            prioridade TEXT,
+            status TEXT,
+            data_abertura TEXT,
+            data_conclusao TEXT,
+            tecnico TEXT,
+            descricao_solucao TEXT
+        )
+    `);
+
+    // Tabela de Usuários
+    db.run(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE,
+            senha TEXT,
+            nome TEXT,
+            perfil TEXT
+        )
+    `, () => {
+        // Criar usuários padrão de teste caso não existam
+        db.run(`INSERT OR IGNORE INTO usuarios (usuario, senha, nome, perfil) VALUES ('operador', '123456', 'Operador de Produção', 'operador')`);
+        db.run(`INSERT OR IGNORE INTO usuarios (usuario, senha, nome, perfil) VALUES ('admin', '123456', 'Gestor de Manutenção', 'gestor')`);
+    });
+});
+
+// Rota de Autenticação (Login)
+app.post('/api/login', (req, res) => {
+    const { usuario, senha } = req.body;
+
+    db.get('SELECT id, usuario, nome, perfil FROM usuarios WHERE usuario = ? AND senha = ?', [usuario, senha], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!row) {
+            res.status(401).json({ error: 'Usuário ou senha inválidos.' });
+            return;
+        }
+        res.json({ message: 'Login realizado com sucesso', usuario: row });
+    });
+});
 
 // 1. Rota para listar chamados (GET)
 app.get('/api/chamados', (req, res) => {

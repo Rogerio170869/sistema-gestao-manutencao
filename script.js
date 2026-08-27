@@ -1,18 +1,49 @@
-const API_URL = 'http://localhost:3000/api/chamados';
+const API_URL = 'http://localhost:3000/api';
 
 let chamados = [];
+let usuarioLogado = null;
 let chartTiposInstance = null;
 let chartPrioridadesInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    verificarSessao();
+
+    const formLogin = document.getElementById('form-login');
     const formEquipamento = document.getElementById('form-equipamento');
     const formChamado = document.getElementById('form-chamado');
     const formModalEdicao = document.getElementById('form-modal-edicao');
 
+    if (formLogin) {
+        formLogin.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const usuarioInput = document.getElementById('login-usuario').value;
+            const senhaInput = document.getElementById('login-senha').value;
+
+            try {
+                const resposta = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario: usuarioInput, senha: senhaInput })
+                });
+
+                if (resposta.ok) {
+                    const dados = await resposta.json();
+                    usuarioLogado = dados.usuario;
+                    localStorage.setItem('usuario_gestao_manutencao', JSON.stringify(usuarioLogado));
+                    iniciarSistema();
+                } else {
+                    alert('Usuário ou senha incorretos.');
+                }
+            } catch (erro) {
+                console.error('Erro no login:', erro);
+                alert('Erro de conexão com o servidor.');
+            }
+        });
+    }
+
     if (formEquipamento) {
         formEquipamento.addEventListener('submit', function (event) {
             event.preventDefault();
-
             const nome = document.getElementById('nome-equipamento').value;
             const tag = document.getElementById('tag-equipamento').value;
 
@@ -41,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const resposta = await fetch(API_URL, {
+                const resposta = await fetch(`${API_URL}/chamados`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(novoChamado)
@@ -55,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (erro) {
                 console.error('Erro de conexão ao abrir chamado:', erro);
-                alert('Servidor fora do ar! Verifique se o "node server.js" está rodando.');
             }
         });
     }
@@ -70,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const descricao_solucao = document.getElementById('modal-solucao').value;
 
             try {
-                const resposta = await fetch(`${API_URL}/${id}`, {
+                const resposta = await fetch(`${API_URL}/chamados/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tecnico, status, descricao_solucao })
@@ -87,13 +117,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+});
+
+function verificarSessao() {
+    const usuarioSalvo = localStorage.getItem('usuario_gestao_manutencao');
+    if (usuarioSalvo) {
+        usuarioLogado = JSON.parse(usuarioSalvo);
+        iniciarSistema();
+    }
+}
+
+function iniciarSistema() {
+    document.getElementById('container-login').style.display = 'none';
+    document.getElementById('conteudo-sistema').style.display = 'block';
+
+    const infoUsuario = document.getElementById('usuario-logado-info');
+    if (infoUsuario) {
+        infoUsuario.textContent = `${usuarioLogado.nome} (${usuarioLogado.perfil.toUpperCase()})`;
+    }
 
     carregarChamadosDaAPI();
-});
+}
+
+function fazerLogout() {
+    localStorage.removeItem('usuario_gestao_manutencao');
+    usuarioLogado = null;
+    location.reload();
+}
 
 async function carregarChamadosDaAPI() {
     try {
-        const resposta = await fetch(API_URL);
+        const resposta = await fetch(`${API_URL}/chamados`);
         chamados = await resposta.json();
         filtrarChamados();
     } catch (erro) {
@@ -190,6 +244,7 @@ function renderizarTabela(listaParaExibir = chamados) {
     if (!tabelaChamados) return;
 
     tabelaChamados.innerHTML = '';
+    const isGestor = usuarioLogado && usuarioLogado.perfil === 'gestor';
 
     listaParaExibir.forEach((chamado) => {
         const novaLinha = document.createElement('tr');
@@ -199,6 +254,24 @@ function renderizarTabela(listaParaExibir = chamados) {
             ? chamado.tecnico 
             : '<span style="color:#9ca3af;">Não atribuído</span>';
 
+        let celulaStatus = chamado.status;
+        let botoesAcao = '<span style="color:#9ca3af; font-size: 12px;">Apenas Leitura</span>';
+
+        if (isGestor) {
+            celulaStatus = `
+                <select onchange="alterarStatus(${chamado.id}, this.value)">
+                    <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+                    <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                    <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
+                </select>
+            `;
+
+            botoesAcao = `
+                <button onclick="abrirModalEdicao(${chamado.id})" style="background-color: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Editar</button>
+                <button onclick="excluirChamado(${chamado.id})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
+            `;
+        }
+
         novaLinha.innerHTML = `
             <td>${osFormatada}</td>
             <td>${formatarData(chamado.data_abertura)}</td>
@@ -206,17 +279,8 @@ function renderizarTabela(listaParaExibir = chamados) {
             <td>${tecnicoExibicao}</td>
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
-            <td>
-                <select onchange="alterarStatus(${chamado.id}, this.value)">
-                    <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-                    <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
-                    <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
-                </select>
-            </td>
-            <td>
-                <button onclick="abrirModalEdicao(${chamado.id})" style="background-color: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Editar</button>
-                <button onclick="excluirChamado(${chamado.id})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
-            </td>
+            <td>${celulaStatus}</td>
+            <td>${botoesAcao}</td>
         `;
 
         tabelaChamados.appendChild(novaLinha);
@@ -246,7 +310,7 @@ function fecharModal() {
 
 async function alterarStatus(id, novoStatus) {
     try {
-        const resposta = await fetch(`${API_URL}/${id}`, {
+        const resposta = await fetch(`${API_URL}/chamados/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: novoStatus })
@@ -263,7 +327,7 @@ async function alterarStatus(id, novoStatus) {
 async function excluirChamado(id) {
     if (confirm(`Tem certeza que deseja excluir o chamado #${id}?`)) {
         try {
-            const resposta = await fetch(`${API_URL}/${id}`, {
+            const resposta = await fetch(`${API_URL}/chamados/${id}`, {
                 method: 'DELETE'
             });
 
