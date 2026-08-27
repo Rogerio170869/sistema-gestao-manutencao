@@ -7,6 +7,7 @@ let chartPrioridadesInstance = null;
 document.addEventListener('DOMContentLoaded', () => {
     const formEquipamento = document.getElementById('form-equipamento');
     const formChamado = document.getElementById('form-chamado');
+    const formModalEdicao = document.getElementById('form-modal-edicao');
 
     if (formEquipamento) {
         formEquipamento.addEventListener('submit', function (event) {
@@ -55,6 +56,34 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (erro) {
                 console.error('Erro de conexão ao abrir chamado:', erro);
                 alert('Servidor fora do ar! Verifique se o "node server.js" está rodando.');
+            }
+        });
+    }
+
+    if (formModalEdicao) {
+        formModalEdicao.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const id = document.getElementById('modal-chamado-id').value;
+            const tecnico = document.getElementById('modal-tecnico').value;
+            const status = document.getElementById('modal-status').value;
+            const descricao_solucao = document.getElementById('modal-solucao').value;
+
+            try {
+                const resposta = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tecnico, status, descricao_solucao })
+                });
+
+                if (resposta.ok) {
+                    fecharModal();
+                    await carregarChamadosDaAPI();
+                } else {
+                    alert('Erro ao salvar alterações do chamado.');
+                }
+            } catch (erro) {
+                console.error('Erro ao atualizar chamado:', erro);
             }
         });
     }
@@ -119,21 +148,17 @@ function renderizarGraficos(dados) {
 
     if (!ctxTipos || !ctxPrioridades) return;
 
-    // Contagem por Tipo
     const corretiva = dados.filter(c => c.tipo === 'Corretiva').length;
     const preventiva = dados.filter(c => c.tipo === 'Preventiva').length;
     const preditiva = dados.filter(c => c.tipo === 'Preditiva').length;
 
-    // Contagem por Prioridade
     const alta = dados.filter(c => c.prioridade === 'Alta').length;
     const media = dados.filter(c => c.prioridade === 'Média').length;
     const baixa = dados.filter(c => c.prioridade === 'Baixa').length;
 
-    // Destruir gráficos anteriores se já existirem
     if (chartTiposInstance) chartTiposInstance.destroy();
     if (chartPrioridadesInstance) chartPrioridadesInstance.destroy();
 
-    // 1. Gráfico de Rosca (Tipos)
     chartTiposInstance = new Chart(ctxTipos, {
         type: 'doughnut',
         data: {
@@ -146,7 +171,6 @@ function renderizarGraficos(dados) {
         options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // 2. Gráfico de Barras (Prioridade)
     chartPrioridadesInstance = new Chart(ctxPrioridades, {
         type: 'bar',
         data: {
@@ -171,10 +195,15 @@ function renderizarTabela(listaParaExibir = chamados) {
         const novaLinha = document.createElement('tr');
         const osFormatada = chamado.os || String(chamado.id).padStart(3, '0');
 
+        const tecnicoExibicao = chamado.tecnico && chamado.tecnico.trim() !== '' 
+            ? chamado.tecnico 
+            : '<span style="color:#9ca3af;">Não atribuído</span>';
+
         novaLinha.innerHTML = `
             <td>${osFormatada}</td>
             <td>${formatarData(chamado.data_abertura)}</td>
             <td>${chamado.equipamento}</td>
+            <td>${tecnicoExibicao}</td>
             <td>${chamado.tipo}</td>
             <td>${chamado.prioridade}</td>
             <td>
@@ -185,6 +214,7 @@ function renderizarTabela(listaParaExibir = chamados) {
                 </select>
             </td>
             <td>
+                <button onclick="abrirModalEdicao(${chamado.id})" style="background-color: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Editar</button>
                 <button onclick="excluirChamado(${chamado.id})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
             </td>
         `;
@@ -193,6 +223,25 @@ function renderizarTabela(listaParaExibir = chamados) {
     });
 
     atualizarDashboard(listaParaExibir);
+}
+
+function abrirModalEdicao(id) {
+    const chamado = chamados.find(c => c.id === id);
+    if (!chamado) return;
+
+    document.getElementById('modal-chamado-id').value = chamado.id;
+    document.getElementById('modal-os-titulo').textContent = chamado.os || String(chamado.id).padStart(3, '0');
+    document.getElementById('modal-tecnico').value = chamado.tecnico || '';
+    document.getElementById('modal-status').value = chamado.status || 'Aberto';
+    document.getElementById('modal-solucao').value = chamado.descricao_solucao || '';
+
+    const modal = document.getElementById('modal-edicao');
+    if (modal) modal.style.display = 'flex';
+}
+
+function fecharModal() {
+    const modal = document.getElementById('modal-edicao');
+    if (modal) modal.style.display = 'none';
 }
 
 async function alterarStatus(id, novoStatus) {
@@ -266,12 +315,14 @@ function exportarCSV() {
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "OS,Data Abertura,Equipamento,Tipo,Prioridade,Status\n";
+    csvContent += "OS,Data Abertura,Equipamento,Técnico,Tipo,Prioridade,Status,Solução\n";
 
     chamados.forEach(c => {
         const os = c.os || String(c.id).padStart(3, '0');
         const dataFormatada = formatarData(c.data_abertura);
-        csvContent += `"${os}","${dataFormatada}","${c.equipamento}","${c.tipo}","${c.prioridade}","${c.status}"\n`;
+        const tecnico = c.tecnico || "Não atribuído";
+        const solucao = c.descricao_solucao ? c.descricao_solucao.replace(/"/g, '""') : "";
+        csvContent += `"${os}","${dataFormatada}","${c.equipamento}","${tecnico}","${c.tipo}","${c.prioridade}","${c.status}","${solucao}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);

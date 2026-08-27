@@ -1,6 +1,6 @@
 const express = require('express');
-const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
+const cors = require('cors');
 
 const app = express();
 const PORT = 3000;
@@ -8,7 +8,7 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Conexão com o banco de dados
+// Conexão com o banco de dados SQLite
 const db = new sqlite3.Database('./manutencao.db', (err) => {
     if (err) {
         console.error('Erro ao conectar ao SQLite:', err.message);
@@ -17,7 +17,7 @@ const db = new sqlite3.Database('./manutencao.db', (err) => {
     }
 });
 
-// Tabela estruturada com ID autoincremento e campo OS formatado
+// Criar tabela incluindo colunas de técnico e solução
 db.run(`
     CREATE TABLE IF NOT EXISTS chamados (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +25,11 @@ db.run(`
         equipamento TEXT,
         tipo TEXT,
         prioridade TEXT,
-        status TEXT
+        status TEXT,
+        data_abertura TEXT,
+        data_conclusao TEXT,
+        tecnico TEXT,
+        descricao_solucao TEXT
     )
 `);
 
@@ -44,55 +48,76 @@ app.get('/api/chamados', (req, res) => {
 app.post('/api/chamados', (req, res) => {
     const { equipamento, tipo, prioridade } = req.body;
     const status = 'Aberto';
+    const data_abertura = new Date().toISOString();
 
-    // Insere o chamado e usa a chave primaria ID para formatar a OS
-    const sql = `INSERT INTO chamados (equipamento, tipo, prioridade, status) VALUES (?, ?, ?, ?)`;
-    db.run(sql, [equipamento, tipo, prioridade, status], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        const idInserido = this.lastID;
-        const osFormatada = String(idInserido).padStart(3, '0');
-
-        // Atualiza a OS com base no ID autoincrementado
-        db.run(`UPDATE chamados SET os = ? WHERE id = ?`, [osFormatada, idInserido], (errUpdate) => {
-            if (errUpdate) {
-                res.status(500).json({ error: errUpdate.message });
+    db.run(
+        `INSERT INTO chamados (equipamento, tipo, prioridade, status, data_abertura) VALUES (?, ?, ?, ?, ?)`,
+        [equipamento, tipo, prioridade, status, data_abertura],
+        function (err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
                 return;
             }
-            res.status(201).json({ id: idInserido, os: osFormatada, equipamento, tipo, prioridade, status });
-        });
-    });
+
+            const idGerado = this.lastID;
+            const os = String(idGerado).padStart(3, '0');
+
+            db.run(`UPDATE chamados SET os = ? WHERE id = ?`, [os, idGerado], (updateErr) => {
+                if (updateErr) {
+                    res.status(500).json({ error: updateErr.message });
+                    return;
+                }
+                res.status(201).json({ id: idGerado, os, equipamento, tipo, prioridade, status, data_abertura });
+            });
+        }
+    );
 });
 
-// 3. Rota para alterar status (PUT)
+// 3. Rota para atualizar chamado (PUT)
 app.put('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, tecnico, descricao_solucao } = req.body;
 
-    const sql = `UPDATE chamados SET status = ? WHERE id = ?`;
-    db.run(sql, [status, id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
+    db.get('SELECT * FROM chamados WHERE id = ?', [id], (err, row) => {
+        if (err || !row) {
+            res.status(404).json({ error: 'Chamado não encontrado.' });
             return;
         }
-        res.json({ id, status });
+
+        const novoStatus = status !== undefined ? status : row.status;
+        const novoTecnico = tecnico !== undefined ? tecnico : row.tecnico;
+        const novaSolucao = descricao_solucao !== undefined ? descricao_solucao : row.descricao_solucao;
+        
+        let data_conclusao = row.data_conclusao;
+        if (novoStatus === 'Concluído' && !row.data_conclusao) {
+            data_conclusao = new Date().toISOString();
+        } else if (novoStatus !== 'Concluído') {
+            data_conclusao = null;
+        }
+
+        db.run(
+            `UPDATE chamados SET status = ?, tecnico = ?, descricao_solucao = ?, data_conclusao = ? WHERE id = ?`,
+            [novoStatus, novoTecnico, novaSolucao, data_conclusao, id],
+            function (updateErr) {
+                if (updateErr) {
+                    res.status(500).json({ error: updateErr.message });
+                    return;
+                }
+                res.json({ message: 'Chamado atualizado com sucesso!' });
+            }
+        );
     });
 });
 
-// 4. Rota para deletar chamado (DELETE)
+// 4. Rota para excluir chamado (DELETE)
 app.delete('/api/chamados/:id', (req, res) => {
     const { id } = req.params;
-
-    const sql = `DELETE FROM chamados WHERE id = ?`;
-    db.run(sql, [id], function (err) {
+    db.run('DELETE FROM chamados WHERE id = ?', [id], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json({ mensagem: 'Chamado excluído com sucesso' });
+        res.json({ message: 'Chamado excluído com sucesso!' });
     });
 });
 
