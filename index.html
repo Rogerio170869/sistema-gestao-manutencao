@@ -16,11 +16,11 @@
             <form id="form-login">
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label for="login-usuario">Usuário:</label>
-                    <input type="text" id="login-usuario" placeholder="Digite seu usuário" required style="width: 100%; padding: 10px; margin-top: 5px;">
+                    <input type="text" id="login-usuario" name="login_usuario" placeholder="Digite seu usuário" required style="width: 100%; padding: 10px; margin-top: 5px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="login-senha">Senha:</label>
-                    <input type="password" id="login-senha" placeholder="Digite sua senha" required style="width: 100%; padding: 10px; margin-top: 5px;">
+                    <input type="password" id="login-senha" name="login_senha" placeholder="Digite sua senha" required style="width: 100%; padding: 10px; margin-top: 5px;">
                 </div>
                 <button type="submit" class="btn-primary" style="width: 100%; padding: 10px; font-size: 16px;">Entrar</button>
             </form>
@@ -59,17 +59,17 @@
                 <form id="form-equipamento">
                     <div class="form-group">
                         <label for="nome-equipamento">Nome do Equipamento:</label>
-                        <input type="text" id="nome-equipamento" placeholder="Ex: Torno CNC" required>
+                        <input type="text" id="nome-equipamento" name="nome_equipamento" placeholder="Ex: Torno CNC" required>
                     </div>
 
                     <div class="form-group">
                         <label for="tag-equipamento">TAG / Código:</label>
-                        <input type="text" id="tag-equipamento" placeholder="Ex: EQ-001" required>
+                        <input type="text" id="tag-equipamento" name="tag_equipamento" placeholder="Ex: EQ-001" required>
                     </div>
 
                     <div class="form-group">
                         <label for="setor-equipamento">Setor:</label>
-                        <select id="setor-equipamento" required>
+                        <select id="setor-equipamento" name="setor_equipamento" required>
                             <option value="">Selecione o Setor</option>
                             <option value="Usinagem">Usinagem</option>
                             <option value="Montagem">Montagem</option>
@@ -89,12 +89,12 @@
                 <form id="form-chamado">
                     <div class="form-group">
                         <label for="equipamento-chamado">Equipamento / TAG:</label>
-                        <input type="text" id="equipamento-chamado" placeholder="Ex: Torno CNC (EQ-001)" required>
+                        <input type="text" id="equipamento-chamado" name="equipamento_chamado" placeholder="Ex: Torno CNC (EQ-001)" required>
                     </div>
 
                     <div class="form-group">
                         <label for="tipo-manutencao">Tipo de Manutenção:</label>
-                        <select id="tipo-manutencao" required>
+                        <select id="tipo-manutencao" name="tipo_manutencao" required>
                             <option value="">Selecione o Tipo</option>
                             <option value="Corretiva">Corretiva</option>
                             <option value="Preventiva">Preventiva</option>
@@ -104,7 +104,7 @@
 
                     <div class="form-group">
                         <label for="prioridade">Prioridade:</label>
-                        <select id="prioridade" required>
+                        <select id="prioridade" name="prioridade" required>
                             <option value="Baixa">Baixa</option>
                             <option value="Média">Média</option>
                             <option value="Alta">Alta</option>
@@ -113,7 +113,7 @@
 
                     <div class="form-group">
                         <label for="descricao-falha">Descrição da Falha / Problema:</label>
-                        <textarea id="descricao-falha" rows="4" placeholder="Descreva em detalhes o problema identificado..."></textarea>
+                        <textarea id="descricao-falha" name="descricao_falha" rows="4" placeholder="Descreva em detalhes o problema identificado..."></textarea>
                     </div>
 
                     <button type="submit" class="btn-primary">Abrir Chamado</button>
@@ -159,17 +159,17 @@
                 <h2>Chamados Registrados</h2>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="filtro-busca" placeholder="Buscar por equipamento..." oninput="filtrarChamados()" style="flex: 2; min-width: 200px;">
+                    <input type="text" id="filtro-busca" name="filtro_busca" placeholder="Buscar por equipamento..." oninput="filtrarChamados()" style="flex: 2; min-width: 200px;">
                     
-                    <select id="filtro-status" onchange="filtrarChamados()" style="flex: 1; min-width: 140px;">
+                    <select id="filtro-status" name="filtro_status" onchange="filtrarChamados()" style="flex: 1; min-width: 140px;">
                         <option value="todos">Todos os Status</option>
                         <option value="Aberto">Aberto</option>
                         <option value="Em Andamento">Em Andamento</option>
                         <option value="Concluído">Concluído</option>
                     </select>
 
-                    <input type="date" id="filtro-data-inicio" onchange="filtrarChamados()" title="Data Inicial">
-                    <input type="date" id="filtro-data-fim" onchange="filtrarChamados()" title="Data Final">
+                    <input type="date" id="filtro-data-inicio" name="filtro_data_inicio" onchange="filtrarChamados()" title="Data Inicial">
+                    <input type="date" id="filtro-data-fim" name="filtro_data_fim" onchange="filtrarChamados()" title="Data Final">
 
                     <button id="btn-exportar-csv" type="button" onclick="exportarCSV()" style="background-color: #16a34a; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Exportar CSV</button>
                 </div>
@@ -198,16 +198,16 @@
             <div style="background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h3>Editar Chamado OS #<span id="modal-os-titulo"></span></h3>
                 <form id="form-modal-edicao">
-                    <input type="hidden" id="modal-chamado-id">
+                    <input type="hidden" id="modal-chamado-id" name="modal_chamado_id">
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label for="modal-tecnico">Técnico Responsável:</label>
-                        <input type="text" id="modal-tecnico" placeholder="Ex: Roberto Silva" style="width: 100%; padding: 8px;" required>
+                        <input type="text" id="modal-tecnico" name="modal_tecnico" placeholder="Ex: Roberto Silva" style="width: 100%; padding: 8px;" required>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label for="modal-status">Status do Chamado:</label>
-                        <select id="modal-status" style="width: 100%; padding: 8px;" required>
+                        <select id="modal-status" name="modal_status" style="width: 100%; padding: 8px;" required>
                             <option value="Aberto">Aberto</option>
                             <option value="Em Andamento">Em Andamento</option>
                             <option value="Concluído">Concluído</option>
@@ -216,7 +216,7 @@
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label for="modal-solucao">Descrição da Solução / Observações:</label>
-                        <textarea id="modal-solucao" rows="4" style="width: 100%; padding: 8px;" placeholder="Informe os procedimentos técnicos realizados..."></textarea>
+                        <textarea id="modal-solucao" name="modal_solucao" rows="4" style="width: 100%; padding: 8px;" placeholder="Informe os procedimentos técnicos realizados..."></textarea>
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
