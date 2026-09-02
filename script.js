@@ -382,24 +382,23 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
-// Função para gerar Relatório Visual em PDF
-function exportarCSV() {
+// Função para gerar Relatório Visual em PDF sem tela em branco
+async function exportarCSV() {
     if (chamados.length === 0) {
         alert("Não há chamados para exportar!");
         return;
     }
 
-    // Criar elemento container do relatório
+    // 1. Criar container do relatório dentro da área visível do documento
+    const containerOriginal = document.getElementById('conteudo-sistema');
     const elemento = document.createElement('div');
     elemento.id = 'relatorio-pdf-temp';
-    elemento.style.position = 'fixed';
-    elemento.style.left = '-9999px'; // Esconde fora da tela para não piscar para o usuário
-    elemento.style.top = '0';
     elemento.style.width = '1000px';
     elemento.style.backgroundColor = '#ffffff';
-    elemento.style.padding = '30px';
+    elemento.style.padding = '25px';
     elemento.style.fontFamily = 'Arial, sans-serif';
     elemento.style.color = '#333333';
+    elemento.style.boxSizing = 'border-box';
 
     const dataAtual = new Date().toLocaleDateString('pt-BR');
 
@@ -410,29 +409,28 @@ function exportarCSV() {
         const tecnico = c.tecnico || "Não atribuído";
         const solucao = c.descricao_solucao || "-";
 
-        // Cores suaves para o PDF
-        let corPrioridade = '#059669'; // verde
-        if (c.prioridade === 'Alta') corPrioridade = '#dc2626'; // vermelho
-        if (c.prioridade === 'Média') corPrioridade = '#d97706'; // amarelo
+        let corPrioridade = '#059669';
+        if (c.prioridade === 'Alta') corPrioridade = '#dc2626';
+        if (c.prioridade === 'Média') corPrioridade = '#d97706';
 
         linhasTabela += `
-            <tr style="border-bottom: 1px solid #e5e7eb; font-size: 12px;">
-                <td style="padding: 10px 8px;"><strong>#${os}</strong></td>
-                <td style="padding: 10px 8px;">${dataFormatada}</td>
-                <td style="padding: 10px 8px;">${c.equipamento}</td>
-                <td style="padding: 10px 8px;">${tecnico}</td>
-                <td style="padding: 10px 8px;">${c.tipo}</td>
-                <td style="padding: 10px 8px; color: ${corPrioridade}; font-weight: bold;">${c.prioridade}</td>
-                <td style="padding: 10px 8px;">${c.status}</td>
-                <td style="padding: 10px 8px;">${solucao}</td>
+            <tr style="border-bottom: 1px solid #e5e7eb; font-size: 11px;">
+                <td style="padding: 8px;"><strong>#${os}</strong></td>
+                <td style="padding: 8px;">${dataFormatada}</td>
+                <td style="padding: 8px;">${c.equipamento}</td>
+                <td style="padding: 8px;">${tecnico}</td>
+                <td style="padding: 8px;">${c.tipo}</td>
+                <td style="padding: 8px; color: ${corPrioridade}; font-weight: bold;">${c.prioridade}</td>
+                <td style="padding: 8px;">${c.status}</td>
+                <td style="padding: 8px;">${solucao}</td>
             </tr>
         `;
     });
 
     elemento.innerHTML = `
-        <div style="margin-bottom: 25px; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px;">
-            <h1 style="color: #1e3a8a; font-size: 24px; margin: 0 0 5px 0;">Relatório de Manutenção Industrial</h1>
-            <p style="color: #6b7280; font-size: 13px; margin: 0;">
+        <div style="margin-bottom: 20px; border-bottom: 3px solid #1e3a8a; padding-bottom: 10px;">
+            <h1 style="color: #1e3a8a; font-size: 22px; margin: 0 0 4px 0;">Relatório de Manutenção Industrial</h1>
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
                 Data de emissão: <strong>${dataAtual}</strong> | 
                 Emitido por: <strong>${usuarioLogado ? usuarioLogado.nome : 'Sistema'}</strong>
             </p>
@@ -440,15 +438,15 @@ function exportarCSV() {
 
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
-                <tr style="background-color: #1e3a8a; color: #ffffff; font-size: 12px;">
-                    <th style="padding: 10px 8px;">OS</th>
-                    <th style="padding: 10px 8px;">Abertura</th>
-                    <th style="padding: 10px 8px;">Equipamento</th>
-                    <th style="padding: 10px 8px;">Técnico</th>
-                    <th style="padding: 10px 8px;">Tipo</th>
-                    <th style="padding: 10px 8px;">Prioridade</th>
-                    <th style="padding: 10px 8px;">Status</th>
-                    <th style="padding: 10px 8px;">Solução</th>
+                <tr style="background-color: #1e3a8a; color: #ffffff; font-size: 11px;">
+                    <th style="padding: 8px;">OS</th>
+                    <th style="padding: 8px;">Abertura</th>
+                    <th style="padding: 8px;">Equipamento</th>
+                    <th style="padding: 8px;">Técnico</th>
+                    <th style="padding: 8px;">Tipo</th>
+                    <th style="padding: 8px;">Prioridade</th>
+                    <th style="padding: 8px;">Status</th>
+                    <th style="padding: 8px;">Solução</th>
                 </tr>
             </thead>
             <tbody>
@@ -457,19 +455,24 @@ function exportarCSV() {
         </table>
     `;
 
-    // Adiciona o elemento ao corpo do documento para que o html2canvas consiga renderizá-lo
-    document.body.appendChild(elemento);
+    // Insere no topo do container visível
+    containerOriginal.prepend(elemento);
+
+    // Aguarda 100ms para garantir que o navegador renderizou os estilos CSS
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const opcoes = {
         margin: [10, 10, 10, 10],
         filename: `Relatorio_Manutencao_${dataAtual.replace(/\//g, '-')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: false, useCORS: true },
+        html2canvas: { scale: 2, scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    // Gera o PDF e remove o elemento temporário do DOM
-    html2pdf().set(opcoes).from(elemento).save().then(() => {
-        document.body.removeChild(elemento);
-    });
+    try {
+        await html2pdf().set(opcoes).from(elemento).save();
+    } finally {
+        // Garante que o elemento do relatório seja removido da tela do usuário após o download
+        containerOriginal.removeChild(elemento);
+    }
 }
