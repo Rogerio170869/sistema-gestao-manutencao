@@ -23,7 +23,12 @@ Atualmente o projeto contempla funcionalidades relacionadas a:
 - Interface web para interação com o sistema
 
 > O projeto está em evolução e novas funcionalidades serão adicionadas durante o desenvolvimento.
+## 🚀 Como executar o projeto
 
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/Rogerio170869/sistema-gestao-manutencao.git
 ## 🛠️ Tecnologias utilizadas
 
 - HTML5
