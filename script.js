@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resposta.ok) {
                     const dados = await resposta.json();
                     usuarioLogado = dados.usuario;
-                    // Salva na sessão temporária (apaga ao fechar a aba/navegador)
                     sessionStorage.setItem('usuario_gestao_manutencao', JSON.stringify(usuarioLogado));
                     iniciarSistema();
                 } else {
@@ -255,6 +254,12 @@ function renderizarTabela(listaParaExibir = chamados) {
             ? chamado.tecnico 
             : '<span style="color:#9ca3af;">Não atribuído</span>';
 
+        // Badge de Prioridade
+        let badgePrioridade = chamado.prioridade;
+        if (chamado.prioridade === 'Alta') badgePrioridade = `<span class="badge badge-alta">Alta</span>`;
+        if (chamado.prioridade === 'Média') badgePrioridade = `<span class="badge badge-media">Média</span>`;
+        if (chamado.prioridade === 'Baixa') badgePrioridade = `<span class="badge badge-baixa">Baixa</span>`;
+
         let celulaStatus = chamado.status;
         let botoesAcao = '<span style="color:#9ca3af; font-size: 12px;">Apenas Leitura</span>';
 
@@ -271,15 +276,19 @@ function renderizarTabela(listaParaExibir = chamados) {
                 <button onclick="abrirModalEdicao(${chamado.id})" style="background-color: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 5px;">Editar</button>
                 <button onclick="excluirChamado(${chamado.id})" style="background-color: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Excluir</button>
             `;
+        } else {
+            if (chamado.status === 'Concluído') celulaStatus = `<span class="badge badge-concluido">Concluído</span>`;
+            if (chamado.status === 'Em Andamento') celulaStatus = `<span class="badge badge-andamento">Em Andamento</span>`;
+            if (chamado.status === 'Aberto') celulaStatus = `<span class="badge badge-aberto">Aberto</span>`;
         }
 
         novaLinha.innerHTML = `
-            <td>${osFormatada}</td>
+            <td><strong>#${osFormatada}</strong></td>
             <td>${formatarData(chamado.data_abertura)}</td>
             <td>${chamado.equipamento}</td>
             <td>${tecnicoExibicao}</td>
             <td>${chamado.tipo}</td>
-            <td>${chamado.prioridade}</td>
+            <td>${badgePrioridade}</td>
             <td>${celulaStatus}</td>
             <td>${botoesAcao}</td>
         `;
@@ -373,29 +382,71 @@ function filtrarChamados() {
     renderizarTabela(chamadosFiltrados);
 }
 
+// Função para gerar Relatório Visual em PDF
 function exportarCSV() {
     if (chamados.length === 0) {
         alert("Não há chamados para exportar!");
         return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "OS,Data Abertura,Equipamento,Técnico,Tipo,Prioridade,Status,Solução\n";
+    const elemento = document.createElement('div');
+    elemento.style.padding = '20px';
+    elemento.style.fontFamily = 'Arial, sans-serif';
 
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+    let linhasTabela = '';
     chamados.forEach(c => {
         const os = c.os || String(c.id).padStart(3, '0');
         const dataFormatada = formatarData(c.data_abertura);
         const tecnico = c.tecnico || "Não atribuído";
-        const solucao = c.descricao_solucao ? c.descricao_solucao.replace(/"/g, '""') : "";
-        csvContent += `"${os}","${dataFormatada}","${c.equipamento}","${tecnico}","${c.tipo}","${c.prioridade}","${c.status}","${solucao}"\n`;
+        const solucao = c.descricao_solucao || "-";
+
+        linhasTabela += `
+            <tr style="border-bottom: 1px solid #e5e7eb; font-size: 12px;">
+                <td style="padding: 8px;"><strong>#${os}</strong></td>
+                <td style="padding: 8px;">${dataFormatada}</td>
+                <td style="padding: 8px;">${c.equipamento}</td>
+                <td style="padding: 8px;">${tecnico}</td>
+                <td style="padding: 8px;">${c.tipo}</td>
+                <td style="padding: 8px;">${c.prioridade}</td>
+                <td style="padding: 8px;">${c.status}</td>
+                <td style="padding: 8px;">${solucao}</td>
+            </tr>
+        `;
     });
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "relatorio_manutencao.csv");
-    document.body.appendChild(link);
+    elemento.innerHTML = `
+        <div class="pdf-header">
+            <h1>Relatório de Manutenção Industrial</h1>
+            <p>Gerado em: ${dataAtual} | Usuário: ${usuarioLogado ? usuarioLogado.nome : 'Sistema'}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left;">
+            <thead>
+                <tr style="background-color: #1e3a8a; color: white; font-size: 12px;">
+                    <th style="padding: 8px;">OS</th>
+                    <th style="padding: 8px;">Abertura</th>
+                    <th style="padding: 8px;">Equipamento</th>
+                    <th style="padding: 8px;">Técnico</th>
+                    <th style="padding: 8px;">Tipo</th>
+                    <th style="padding: 8px;">Prioridade</th>
+                    <th style="padding: 8px;">Status</th>
+                    <th style="padding: 8px;">Solução</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${linhasTabela}
+            </tbody>
+        </table>
+    `;
 
-    link.click();
-    document.body.removeChild(link);
+    const opçoes = {
+        margin: 10,
+        filename: `Relatorio_Manutencao_${dataAtual.replace(/\//g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opçoes).from(elemento).save();
 }

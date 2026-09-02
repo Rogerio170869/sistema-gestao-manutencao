@@ -114,3 +114,39 @@ footer {
     color: #64748b;
     font-size: 14px;
 }
+/* Badges de Status e Prioridade */
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    display: inline-block;
+    text-align: center;
+}
+
+.badge-alta { background-color: #fee2e2; color: #dc2626; }
+.badge-media { background-color: #fef3c7; color: #d97706; }
+.badge-baixa { background-color: #d1fae5; color: #059669; }
+
+.badge-concluido { background-color: #dcfce7; color: #16a34a; }
+.badge-andamento { background-color: #e0f2fe; color: #0284c7; }
+.badge-aberto { background-color: #fef2f2; color: #ef4444; }
+
+/* Formatação do Cabeçalho do Relatório PDF (gerado dinamicamente) */
+.pdf-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 10px;
+}
+
+.pdf-header h1 {
+    color: #1e3a8a;
+    font-size: 22px;
+    margin: 0;
+}
+
+.pdf-header p {
+    color: #6b7280;
+    font-size: 12px;
+    margin: 4px 0 0 0;
+}
