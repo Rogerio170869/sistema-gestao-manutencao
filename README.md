@@ -1,10 +1,50 @@
-# sistema-gestao-manutencao
-Projeto 1
 # Sistema de Gestão de Manutenção
 
-Este projeto tem como objetivo gerenciar chamados e ordens de serviço para manutenção preventiva e corretiva de equipamentos.
+Sistema web desenvolvido para auxiliar no controle e gerenciamento de atividades de manutenção.
 
-## Funcionalidades Planejadas
+## 📋 Sobre o projeto
+
+O Sistema de Gestão de Manutenção foi desenvolvido como projeto prático de portfólio, com o objetivo de aplicar conceitos de desenvolvimento web, programação, banco de dados e controle de versão.
+
+A aplicação busca organizar informações relacionadas a equipamentos, chamados e atividades de manutenção, permitindo acompanhar o andamento dos serviços.
+
+## 🎯 Objetivo
+
+Desenvolver uma aplicação web para apoiar o processo de gestão de manutenção, centralizando informações e facilitando o acompanhamento das atividades.
+
+## ⚙️ Funcionalidades
+
+Atualmente o projeto contempla funcionalidades relacionadas a:
+
 - Cadastro de equipamentos
-- Abertura de chamados de manutenção
-- Acompanhamento de status dos serviços
+- Registro de chamados de manutenção
+- Controle de status
+- Gerenciamento de informações de manutenção
+- Interface web para interação com o sistema
+
+> O projeto está em evolução e novas funcionalidades serão adicionadas durante o desenvolvimento.
+
+## 🛠️ Tecnologias utilizadas
+
+- HTML5
+- CSS3
+- JavaScript
+- Node.js
+- Banco de dados
+- Git
+- GitHub
+- Visual Studio Code
+
+## 📁 Estrutura do projeto
+
+```text
+sistema-gestao-manutencao/
+│
+├── index.html
+├── style.css
+├── script.js
+├── server.js
+├── package.json
+├── package-lock.json
+├── .gitignore
+└── README.md
