@@ -389,9 +389,17 @@ function exportarCSV() {
         return;
     }
 
+    // Criar elemento container do relatório
     const elemento = document.createElement('div');
-    elemento.style.padding = '20px';
+    elemento.id = 'relatorio-pdf-temp';
+    elemento.style.position = 'fixed';
+    elemento.style.left = '-9999px'; // Esconde fora da tela para não piscar para o usuário
+    elemento.style.top = '0';
+    elemento.style.width = '1000px';
+    elemento.style.backgroundColor = '#ffffff';
+    elemento.style.padding = '30px';
     elemento.style.fontFamily = 'Arial, sans-serif';
+    elemento.style.color = '#333333';
 
     const dataAtual = new Date().toLocaleDateString('pt-BR');
 
@@ -402,36 +410,45 @@ function exportarCSV() {
         const tecnico = c.tecnico || "Não atribuído";
         const solucao = c.descricao_solucao || "-";
 
+        // Cores suaves para o PDF
+        let corPrioridade = '#059669'; // verde
+        if (c.prioridade === 'Alta') corPrioridade = '#dc2626'; // vermelho
+        if (c.prioridade === 'Média') corPrioridade = '#d97706'; // amarelo
+
         linhasTabela += `
             <tr style="border-bottom: 1px solid #e5e7eb; font-size: 12px;">
-                <td style="padding: 8px;"><strong>#${os}</strong></td>
-                <td style="padding: 8px;">${dataFormatada}</td>
-                <td style="padding: 8px;">${c.equipamento}</td>
-                <td style="padding: 8px;">${tecnico}</td>
-                <td style="padding: 8px;">${c.tipo}</td>
-                <td style="padding: 8px;">${c.prioridade}</td>
-                <td style="padding: 8px;">${c.status}</td>
-                <td style="padding: 8px;">${solucao}</td>
+                <td style="padding: 10px 8px;"><strong>#${os}</strong></td>
+                <td style="padding: 10px 8px;">${dataFormatada}</td>
+                <td style="padding: 10px 8px;">${c.equipamento}</td>
+                <td style="padding: 10px 8px;">${tecnico}</td>
+                <td style="padding: 10px 8px;">${c.tipo}</td>
+                <td style="padding: 10px 8px; color: ${corPrioridade}; font-weight: bold;">${c.prioridade}</td>
+                <td style="padding: 10px 8px;">${c.status}</td>
+                <td style="padding: 10px 8px;">${solucao}</td>
             </tr>
         `;
     });
 
     elemento.innerHTML = `
-        <div class="pdf-header">
-            <h1>Relatório de Manutenção Industrial</h1>
-            <p>Gerado em: ${dataAtual} | Usuário: ${usuarioLogado ? usuarioLogado.nome : 'Sistema'}</p>
+        <div style="margin-bottom: 25px; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px;">
+            <h1 style="color: #1e3a8a; font-size: 24px; margin: 0 0 5px 0;">Relatório de Manutenção Industrial</h1>
+            <p style="color: #6b7280; font-size: 13px; margin: 0;">
+                Data de emissão: <strong>${dataAtual}</strong> | 
+                Emitido por: <strong>${usuarioLogado ? usuarioLogado.nome : 'Sistema'}</strong>
+            </p>
         </div>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left;">
+
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
-                <tr style="background-color: #1e3a8a; color: white; font-size: 12px;">
-                    <th style="padding: 8px;">OS</th>
-                    <th style="padding: 8px;">Abertura</th>
-                    <th style="padding: 8px;">Equipamento</th>
-                    <th style="padding: 8px;">Técnico</th>
-                    <th style="padding: 8px;">Tipo</th>
-                    <th style="padding: 8px;">Prioridade</th>
-                    <th style="padding: 8px;">Status</th>
-                    <th style="padding: 8px;">Solução</th>
+                <tr style="background-color: #1e3a8a; color: #ffffff; font-size: 12px;">
+                    <th style="padding: 10px 8px;">OS</th>
+                    <th style="padding: 10px 8px;">Abertura</th>
+                    <th style="padding: 10px 8px;">Equipamento</th>
+                    <th style="padding: 10px 8px;">Técnico</th>
+                    <th style="padding: 10px 8px;">Tipo</th>
+                    <th style="padding: 10px 8px;">Prioridade</th>
+                    <th style="padding: 10px 8px;">Status</th>
+                    <th style="padding: 10px 8px;">Solução</th>
                 </tr>
             </thead>
             <tbody>
@@ -440,13 +457,19 @@ function exportarCSV() {
         </table>
     `;
 
-    const opçoes = {
-        margin: 10,
+    // Adiciona o elemento ao corpo do documento para que o html2canvas consiga renderizá-lo
+    document.body.appendChild(elemento);
+
+    const opcoes = {
+        margin: [10, 10, 10, 10],
         filename: `Relatorio_Manutencao_${dataAtual.replace(/\//g, '-')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, logging: false, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().set(opçoes).from(elemento).save();
+    // Gera o PDF e remove o elemento temporário do DOM
+    html2pdf().set(opcoes).from(elemento).save().then(() => {
+        document.body.removeChild(elemento);
+    });
 }
