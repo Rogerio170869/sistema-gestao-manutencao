@@ -594,10 +594,14 @@ app.use((err, req, res, next) => {
 // INICIAR SERVIDOR
 // ===============================
 
-app.listen(PORT, () => {
+if (require.main === module) {
+    app.listen(PORT, () => {
 
-    console.log(
-        `Servidor rodando na porta ${PORT}`
-    );
+        console.log(
+            `Servidor rodando na porta ${PORT}`
+        );
 
-});
+    });
+}
+
+module.exports = app;
