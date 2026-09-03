@@ -374,3 +374,37 @@ test('deve limpar data de conclusão ao voltar chamado para andamento', async ()
     expect(chamado.data_conclusao).toBeNull();
 
 });
+test('deve atualizar tecnico e descricao da solução do chamado', async () => {
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .send({
+            equipamento: 'Equipamento atualização técnico',
+            tipo: 'Corretiva',
+            prioridade: 'Média'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const atualizado = await request(app)
+        .put(`/api/chamados/${id}`)
+        .send({
+            tecnico: 'Técnico Teste',
+            descricao_solucao: 'Foi realizada a substituição do componente.'
+        });
+
+    expect(atualizado.statusCode).toBe(200);
+
+    const consulta = await request(app)
+        .get('/api/chamados');
+
+    const chamado = consulta.body.find(item => item.id === id);
+
+    expect(chamado).toBeDefined();
+    expect(chamado.tecnico).toBe('Técnico Teste');
+    expect(chamado.descricao_solucao)
+        .toBe('Foi realizada a substituição do componente.');
+
+});
