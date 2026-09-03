@@ -371,7 +371,31 @@ app.put('/api/chamados/:id', (req, res) => {
         tecnico,
         descricao_solucao
     } = req.body || {};
+if (
+    status === undefined &&
+    tecnico === undefined &&
+    descricao_solucao === undefined
+) {
+    return res.status(400).json({
+        error: 'Informe pelo menos um campo para atualizar.'
+    });
+}if (
+    tecnico !== undefined &&
+    !String(tecnico).trim()
+) {
+    return res.status(400).json({
+        error: 'O campo tecnico não pode ficar vazio.'
+    });
+}
 
+if (
+    descricao_solucao !== undefined &&
+    !String(descricao_solucao).trim()
+) {
+    return res.status(400).json({
+        error: 'O campo descricao_solucao não pode ficar vazio.'
+    });
+}
     db.get(
         `
         SELECT *

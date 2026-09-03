@@ -408,3 +408,53 @@ test('deve atualizar tecnico e descricao da solução do chamado', async () => {
         .toBe('Foi realizada a substituição do componente.');
 
 });
+test('deve rejeitar atualização sem nenhum campo informado', async () => {
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .send({
+            equipamento: 'Equipamento teste atualização vazia',
+            tipo: 'Corretiva',
+            prioridade: 'Média'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const resposta = await request(app)
+        .put(`/api/chamados/${id}`)
+        .send({});
+
+    expect(resposta.statusCode).toBe(400);
+    expect(resposta.body.error)
+        .toBe('Informe pelo menos um campo para atualizar.');
+
+});
+
+
+test('deve rejeitar tecnico vazio na atualização', async () => {
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .send({
+            equipamento: 'Equipamento teste técnico vazio',
+            tipo: 'Corretiva',
+            prioridade: 'Média'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const resposta = await request(app)
+        .put(`/api/chamados/${id}`)
+        .send({
+            tecnico: '   '
+        });
+
+    expect(resposta.statusCode).toBe(400);
+    expect(resposta.body.error)
+        .toBe('O campo tecnico não pode ficar vazio.');
+
+});
