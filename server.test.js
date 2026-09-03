@@ -334,3 +334,43 @@ test('deve rejeitar chamado sem prioridade', async () => {
     });
 
 });
+test('deve limpar data de conclusão ao voltar chamado para andamento', async () => {
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .send({
+            equipamento: 'Equipamento transição status',
+            tipo: 'Corretiva',
+            prioridade: 'Alta'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const concluido = await request(app)
+        .put(`/api/chamados/${id}`)
+        .send({
+            status: 'Concluído'
+        });
+
+    expect(concluido.statusCode).toBe(200);
+
+    const andamento = await request(app)
+        .put(`/api/chamados/${id}`)
+        .send({
+            status: 'Em andamento'
+        });
+
+    expect(andamento.statusCode).toBe(200);
+
+    const consulta = await request(app)
+        .get('/api/chamados');
+
+    const chamado = consulta.body.find(item => item.id === id);
+
+    expect(chamado).toBeDefined();
+    expect(chamado.status).toBe('Em andamento');
+    expect(chamado.data_conclusao).toBeNull();
+
+});
