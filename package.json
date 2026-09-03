@@ -1,17 +1,26 @@
 {
   "name": "sistema-gestao-manutencao",
   "version": "1.0.0",
-  "description": "Projeto 1\r # Sistema de Gestão de Manutenção",
-  "main": "script.js",
+  "description": "Sistema web para gestão de chamados e manutenção industrial",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Rogerio170869/sistema-gestao-manutencao.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "manutencao",
+    "gestao",
+    "industria",
+    "nodejs",
+    "express",
+    "sqlite",
+    "api-rest"
+  ],
+  "author": "Rogerio Motta",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
