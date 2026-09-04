@@ -533,7 +533,7 @@ app.get(
 // CRIAR CHAMADO
 // ===============================
 
-app.post('/api/chamados', (req, res) => {
+app.post('/api/chamados', autenticarToken, (req, res) => {
 
     const erroValidacao =
         validarChamado(req.body);

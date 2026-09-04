@@ -173,12 +173,25 @@ test('deve rejeitar atualização com ID inválido', async () => {
 });    
 test('deve rejeitar chamado sem prioridade', async () => {
 
-    const response = await request(app)
-        .post('/api/chamados')
-        .send({
-            equipamento: 'Equipamento sem prioridade',
-            tipo: 'Corretiva'
-        });
+    const loginConsulta = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+const response = await request(app)
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        equipamento: 'Equipamento sem prioridade',
+        tipo: 'Corretiva'
+    });
 
     expect(response.statusCode).toBe(400);
 
@@ -188,12 +201,20 @@ test('deve rejeitar chamado sem prioridade', async () => {
 });
     test('deve rejeitar chamado sem tipo', async () => {
 
-    const response = await request(app)
-        .post('/api/chamados')
-        .send({
-            equipamento: 'Equipamento sem tipo',
-            prioridade: 'Alta'
-        });
+  const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const response = await request(app)
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        equipamento: 'Equipamento sem tipo',
+        prioridade: 'Alta'
+    });
 
     expect(response.statusCode).toBe(400);
 
@@ -203,13 +224,21 @@ test('deve rejeitar chamado sem prioridade', async () => {
 });
     test('deve registrar data de conclusão ao concluir chamado', async () => {
 
-        const criado = await request(app)
-            .post('/api/chamados')
-            .send({
-                equipamento: 'Equipamento para conclusão',
-                tipo: 'Corretiva',
-                prioridade: 'Alta'
-            });
+        const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const criado = await request(app)
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        equipamento: 'Equipamento para conclusão',
+        tipo: 'Corretiva',
+        prioridade: 'Alta'
+    });
 
         expect(criado.statusCode).toBe(201);
 
@@ -223,7 +252,7 @@ test('deve rejeitar chamado sem prioridade', async () => {
 
         expect(atualizado.statusCode).toBe(200);
 
-const login = await request(app)
+const loginConsulta = await request(app)
     .post('/api/login')
     .send({
         usuario: 'admin',
@@ -232,7 +261,7 @@ const login = await request(app)
 
 const consulta = await request(app)
     .get('/api/chamados')
-    .set('Authorization', `Bearer ${login.body.token}`);
+    .set('Authorization', `Bearer ${loginConsulta.body.token}`);
 
         expect(consulta.statusCode).toBe(200);
 
@@ -259,13 +288,21 @@ const consulta = await request(app)
 
     test('deve excluir um chamado existente', async () => {
 
-        const criado = await request(app)
-            .post('/api/chamados')
-            .send({
-                equipamento: 'Equipamento para exclusão',
-                tipo: 'Corretiva',
-                prioridade: 'Baixa'
-            });
+        const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const criado = await request(app)
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        equipamento: 'Equipamento para exclusão',
+        tipo: 'Corretiva',
+        prioridade: 'Baixa'
+    });
 
         expect(criado.statusCode).toBe(201);
 
@@ -282,14 +319,20 @@ const consulta = await request(app)
     });
 
     test('deve rejeitar status inválido ao atualizar chamado', async () => {
-
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
         const criado = await request(app)
-            .post('/api/chamados')
-            .send({
-                equipamento: 'Equipamento teste status',
-                tipo: 'Corretiva',
-                prioridade: 'Baixa'
-            });
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        equipamento: 'Equipamento teste status',
+        tipo: 'Corretiva',
+        prioridade: 'Baixa'
+    });
 
         expect(criado.statusCode).toBe(201);
 
@@ -309,9 +352,15 @@ const consulta = await request(app)
     });
 
     test('deve atualizar um chamado existente', async () => {
-
-        const criado = await request(app)
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+            const criado = await request(app)
             .post('/api/chamados')
+            .set('Authorization', `Bearer ${login.body.token}`)
             .send({
                 equipamento: 'Motor para atualização',
                 tipo: 'Preventiva',
@@ -348,10 +397,15 @@ const login = await request(app)
         usuario: 'admin',
         senha: '123456'
     });
-
+const loginConsulta = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
 const response = await request(app)
     .get('/api/chamados')
-    .set('Authorization', `Bearer ${login.body.token}`);
+    .set('Authorization', `Bearer ${loginConsulta.body.token}`);
 
         expect(response.statusCode).toBe(200);
 
@@ -361,10 +415,16 @@ const response = await request(app)
     });
 
     test('deve rejeitar chamado sem equipamento', async () => {
-
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
         const response = await request(app)
-            .post('/api/chamados')
-            .send({
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
                 tipo: 'Corretiva',
                 prioridade: 'Alta'
             });
@@ -377,10 +437,16 @@ const response = await request(app)
     });
 
     test('deve criar um chamado válido', async () => {
-
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
         const response = await request(app)
-            .post('/api/chamados')
-            .send({
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
                 equipamento: 'Motor de teste',
                 tipo: 'Corretiva',
                 prioridade: 'Alta'
@@ -408,10 +474,16 @@ const response = await request(app)
 
 });
 test('deve limpar data de conclusão ao voltar chamado para andamento', async () => {
-
-    const criado = await request(app)
-        .post('/api/chamados')
-        .send({
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+const criado = await request(app)
+    .post('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
             equipamento: 'Equipamento transição status',
             tipo: 'Corretiva',
             prioridade: 'Alta'
@@ -436,15 +508,7 @@ test('deve limpar data de conclusão ao voltar chamado para andamento', async ()
         });
 
     expect(andamento.statusCode).toBe(200);
-
-const login = await request(app)
-    .post('/api/login')
-    .send({
-        usuario: 'admin',
-        senha: '123456'
-    });
-
-const consulta = await request(app)
+    const consulta = await request(app)
     .get('/api/chamados')
     .set('Authorization', `Bearer ${login.body.token}`);
 
@@ -456,9 +520,15 @@ const consulta = await request(app)
 
 });
 test('deve atualizar tecnico e descricao da solução do chamado', async () => {
-
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
     const criado = await request(app)
         .post('/api/chamados')
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             equipamento: 'Equipamento atualização técnico',
             tipo: 'Corretiva',
@@ -478,12 +548,7 @@ test('deve atualizar tecnico e descricao da solução do chamado', async () => {
 
     expect(atualizado.statusCode).toBe(200);
 
-const login = await request(app)
-    .post('/api/login')
-    .send({
-        usuario: 'admin',
-        senha: '123456'
-    });
+
 
 const consulta = await request(app)
     .get('/api/chamados')
@@ -498,9 +563,15 @@ const consulta = await request(app)
 
 });
 test('deve rejeitar atualização sem nenhum campo informado', async () => {
-
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
     const criado = await request(app)
         .post('/api/chamados')
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             equipamento: 'Equipamento teste atualização vazia',
             tipo: 'Corretiva',
@@ -523,9 +594,16 @@ test('deve rejeitar atualização sem nenhum campo informado', async () => {
 
 
 test('deve rejeitar tecnico vazio na atualização', async () => {
+    const login = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
 
     const criado = await request(app)
         .post('/api/chamados')
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             equipamento: 'Equipamento teste técnico vazio',
             tipo: 'Corretiva',
