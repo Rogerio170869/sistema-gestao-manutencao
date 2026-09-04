@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('./server');
-
+const jwt = require('jsonwebtoken');
 describe('Health Check', () => {
 
     test('deve retornar status 200 e serviço OK', async () => {
@@ -20,7 +20,50 @@ describe('Health Check', () => {
 });
 
 describe('Login', () => {
+    test('deve rejeitar token JWT inválido', async () => {
+    const response = await request(app)
+        .get('/api/chamados')
+        .set('Authorization', 'Bearer token-invalido');
 
+    expect(response.statusCode).toBe(401);
+});
+    test('deve rejeitar acesso sem token', async () => {
+    const response = await request(app)
+        .get('/api/chamados');
+
+    expect(response.statusCode).toBe(401);
+});
+    test('deve retornar um token JWT no login', async () => {
+    const response = await request(app)
+        .post('/api/login')
+        .send({ usuario: 'admin', senha: '123456' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.token).toBeDefined();
+    expect(typeof response.body.token).toBe('string');
+    expect(response.body.token.split('.')).toHaveLength(3);
+});
+test('deve autenticar usuário com senha armazenada em bcrypt', async () => {
+
+    const response = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
+
+    expect(response.statusCode).toBe(200);
+
+    expect(response.body.message)
+        .toBe('Login realizado com sucesso');
+
+    expect(response.body.usuario.usuario)
+        .toBe('admin');
+
+    expect(response.body.usuario.perfil)
+        .toBe('gestor');
+
+});
     test('deve realizar login com usuário válido', async () => {
 
         const response = await request(app)
@@ -71,7 +114,21 @@ describe('Login', () => {
             .toBe('Usuário e senha são obrigatórios.');
 
     });
+test('não deve retornar a senha no login', async () => {
 
+    const response = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'operador',
+            senha: '123456'
+        });
+
+    expect(response.statusCode).toBe(200);
+
+    expect(response.body.usuario.senha)
+        .toBeUndefined();
+
+});
 });
 
 describe('Chamados', () => {
@@ -166,8 +223,16 @@ test('deve rejeitar chamado sem prioridade', async () => {
 
         expect(atualizado.statusCode).toBe(200);
 
-        const consulta = await request(app)
-            .get('/api/chamados');
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const consulta = await request(app)
+    .get('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
         expect(consulta.statusCode).toBe(200);
 
@@ -277,8 +342,16 @@ test('deve rejeitar chamado sem prioridade', async () => {
 
     test('deve listar os chamados', async () => {
 
-        const response = await request(app)
-            .get('/api/chamados');
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const response = await request(app)
+    .get('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
         expect(response.statusCode).toBe(200);
 
@@ -364,8 +437,16 @@ test('deve limpar data de conclusão ao voltar chamado para andamento', async ()
 
     expect(andamento.statusCode).toBe(200);
 
-    const consulta = await request(app)
-        .get('/api/chamados');
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const consulta = await request(app)
+    .get('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
     const chamado = consulta.body.find(item => item.id === id);
 
@@ -397,8 +478,16 @@ test('deve atualizar tecnico e descricao da solução do chamado', async () => {
 
     expect(atualizado.statusCode).toBe(200);
 
-    const consulta = await request(app)
-        .get('/api/chamados');
+const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const consulta = await request(app)
+    .get('/api/chamados')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
     const chamado = consulta.body.find(item => item.id === id);
 

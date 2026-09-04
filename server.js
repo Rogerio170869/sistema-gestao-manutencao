@@ -1,6 +1,79 @@
+require('dotenv').config();
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+// ===============================
+// GERAR TOKEN JWT
+// ===============================
+
+function gerarToken(usuario) {
+
+    return jwt.sign(
+        {
+            id: usuario.id,
+            usuario: usuario.usuario,
+            perfil: usuario.perfil
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: '8h'
+        }
+    );
+
+}
+
+// ===============================
+// AUTENTICAÇÃO JWT
+// ===============================
+
+function autenticarToken(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            error: 'Token não informado.'
+        });
+    }
+
+    const partes = authHeader.split(' ');
+
+    if (partes.length !== 2 || partes[0] !== 'Bearer') {
+        return res.status(401).json({
+            error: 'Token inválido.'
+        });
+    }
+
+    const token = partes[1];
+
+    try {
+
+        const usuario = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        req.usuario = usuario;
+
+        next();
+
+    } catch (error) {
+
+        return res.status(401).json({
+            error: 'Token inválido ou expirado.'
+        });
+
+    }
+
+}
+
+// ===============================
+// CONFIGURAÇÃO DO EXPRESS
+// ===============================
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,11 +86,22 @@ app.use(express.json());
 // ===============================
 
 const db = new sqlite3.Database('./manutencao.db', (err) => {
+
     if (err) {
-        console.error('Erro ao conectar ao SQLite:', err.message);
+
+        console.error(
+            'Erro ao conectar ao SQLite:',
+            err.message
+        );
+
     } else {
-        console.log('Conectado ao banco de dados SQLite.');
+
+        console.log(
+            'Conectado ao banco de dados SQLite.'
+        );
+
     }
+
 });
 
 // ===============================
@@ -26,7 +110,10 @@ const db = new sqlite3.Database('./manutencao.db', (err) => {
 
 db.serialize(() => {
 
-    // Tabela de chamados
+    // ===============================
+    // TABELA DE CHAMADOS
+    // ===============================
+
     db.run(`
         CREATE TABLE IF NOT EXISTS chamados (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,12 +128,22 @@ db.serialize(() => {
             descricao_solucao TEXT
         )
     `, (err) => {
+
         if (err) {
-            console.error('Erro ao criar tabela chamados:', err.message);
+
+            console.error(
+                'Erro ao criar tabela chamados:',
+                err.message
+            );
+
         }
+
     });
 
-    // Tabela de usuários
+    // ===============================
+    // TABELA DE USUÁRIOS
+    // ===============================
+
     db.run(`
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,36 +155,69 @@ db.serialize(() => {
     `, (err) => {
 
         if (err) {
-            console.error('Erro ao criar tabela usuarios:', err.message);
+
+            console.error(
+                'Erro ao criar tabela usuarios:',
+                err.message
+            );
+
             return;
         }
 
-        // Usuário padrão
-        db.run(
-            `INSERT OR IGNORE INTO usuarios
-            (usuario, senha, nome, perfil)
-            VALUES (?, ?, ?, ?)`,
-            [
-                'operador',
-                '123456',
-                'Operador de Produção',
-                'operador'
-            ]
+        // ===============================
+        // USUÁRIOS PADRÃO
+        // ===============================
+
+        bcrypt.hash(
+            '123456',
+            10,
+            (hashErr, hashSenha) => {
+
+                if (hashErr) {
+
+                    console.error(
+                        'Erro ao gerar hash das senhas padrão:',
+                        hashErr.message
+                    );
+
+                    return;
+                }
+
+                // Usuário operador
+                db.run(
+                    `
+                    INSERT OR IGNORE INTO usuarios
+                    (usuario, senha, nome, perfil)
+                    VALUES (?, ?, ?, ?)
+                    `,
+                    [
+                        'operador',
+                        hashSenha,
+                        'Operador de Produção',
+                        'operador'
+                    ]
+                );
+
+                // Usuário administrador
+                db.run(
+                    `
+                    INSERT OR IGNORE INTO usuarios
+                    (usuario, senha, nome, perfil)
+                    VALUES (?, ?, ?, ?)
+                    `,
+                    [
+                        'admin',
+                        hashSenha,
+                        'Gestor de Manutenção',
+                        'gestor'
+                    ]
+                );
+
+            }
         );
 
-        // Administrador padrão
-        db.run(
-            `INSERT OR IGNORE INTO usuarios
-            (usuario, senha, nome, perfil)
-            VALUES (?, ?, ?, ?)`,
-            [
-                'admin',
-                '123456',
-                'Gestor de Manutenção',
-                'gestor'
-            ]
-        );
     });
+
 });
 
 // ===============================
@@ -103,18 +233,25 @@ function validarChamado(body) {
     } = body || {};
 
     if (!equipamento || !String(equipamento).trim()) {
+
         return 'O campo equipamento é obrigatório.';
+
     }
 
     if (!tipo || !String(tipo).trim()) {
+
         return 'O campo tipo é obrigatório.';
+
     }
 
     if (!prioridade || !String(prioridade).trim()) {
+
         return 'O campo prioridade é obrigatório.';
+
     }
 
     return null;
+
 }
 
 // ===============================
@@ -151,14 +288,12 @@ app.post('/api/login', (req, res) => {
 
     db.get(
         `
-        SELECT id, usuario, nome, perfil
+        SELECT id, usuario, senha, nome, perfil
         FROM usuarios
         WHERE usuario = ?
-        AND senha = ?
         `,
         [
-            String(usuario).trim(),
-            senha
+            String(usuario).trim()
         ],
         (err, row) => {
 
@@ -170,62 +305,229 @@ app.post('/api/login', (req, res) => {
                 );
 
                 return res.status(500).json({
-                    error: 'Erro interno ao realizar login.'
+                    error:
+                        'Erro interno ao realizar login.'
                 });
+
             }
 
             if (!row) {
 
                 return res.status(401).json({
-                    error: 'Usuário ou senha inválidos.'
+                    error:
+                        'Usuário ou senha inválidos.'
                 });
+
             }
 
-            return res.json({
+            const senhaArmazenada = row.senha;
 
-                message:
-                    'Login realizado com sucesso',
+            // ===============================
+            // SENHA COM BCRYPT
+            // ===============================
 
-                usuario: row
+            if (senhaArmazenada.startsWith('$2')) {
 
-            });
+                bcrypt.compare(
+                    senha,
+                    senhaArmazenada,
+                    (compareErr, senhaValida) => {
+
+                        if (compareErr) {
+
+                            console.error(
+                                'Erro ao verificar senha:',
+                                compareErr.message
+                            );
+
+                            return res.status(500).json({
+                                error:
+                                    'Erro interno ao realizar login.'
+                            });
+
+                        }
+
+                        if (!senhaValida) {
+
+                            return res.status(401).json({
+                                error:
+                                    'Usuário ou senha inválidos.'
+                            });
+
+                        }
+
+                        const usuarioAutenticado = {
+
+                            id: row.id,
+                            usuario: row.usuario,
+                            nome: row.nome,
+                            perfil: row.perfil
+
+                        };
+
+                        const token =
+                            gerarToken(
+                                usuarioAutenticado
+                            );
+
+                        return res.json({
+
+                            message:
+                                'Login realizado com sucesso',
+
+                            usuario:
+                                usuarioAutenticado,
+
+                            token
+
+                        });
+
+                    }
+                );
+
+                return;
+
+            }
+
+            // ===============================
+            // COMPATIBILIDADE COM SENHA ANTIGA
+            // ===============================
+
+            if (senhaArmazenada !== senha) {
+
+                return res.status(401).json({
+                    error:
+                        'Usuário ou senha inválidos.'
+                });
+
+            }
+
+            // ===============================
+            // CONVERTE SENHA ANTIGA PARA BCRYPT
+            // ===============================
+
+            bcrypt.hash(
+                senha,
+                10,
+                (hashErr, novaSenhaHash) => {
+
+                    if (hashErr) {
+
+                        console.error(
+                            'Erro ao gerar hash da senha:',
+                            hashErr.message
+                        );
+
+                        return res.status(500).json({
+                            error:
+                                'Erro interno ao proteger a senha.'
+                        });
+
+                    }
+
+                    db.run(
+                        `
+                        UPDATE usuarios
+                        SET senha = ?
+                        WHERE id = ?
+                        `,
+                        [
+                            novaSenhaHash,
+                            row.id
+                        ],
+                        (updateErr) => {
+
+                            if (updateErr) {
+
+                                console.error(
+                                    'Erro ao atualizar senha:',
+                                    updateErr.message
+                                );
+
+                                return res.status(500).json({
+                                    error:
+                                        'Erro interno ao atualizar a senha.'
+                                });
+
+                            }
+
+                            const usuarioAutenticado = {
+
+                                id: row.id,
+                                usuario: row.usuario,
+                                nome: row.nome,
+                                perfil: row.perfil
+
+                            };
+
+                            const token =
+                                gerarToken(
+                                    usuarioAutenticado
+                                );
+
+                            return res.json({
+
+                                message:
+                                    'Login realizado com sucesso',
+
+                                usuario:
+                                    usuarioAutenticado,
+
+                                token
+
+                            });
+
+                        }
+                    );
+
+                }
+            );
 
         }
     );
+
 });
 
 // ===============================
 // LISTAR CHAMADOS
+// PROTEGIDO POR JWT
 // ===============================
 
-app.get('/api/chamados', (req, res) => {
+app.get(
+    '/api/chamados',
+    autenticarToken,
+    (req, res) => {
 
-    db.all(
-        `
-        SELECT *
-        FROM chamados
-        ORDER BY id DESC
-        `,
-        [],
-        (err, rows) => {
+        db.all(
+            `
+            SELECT *
+            FROM chamados
+            ORDER BY id DESC
+            `,
+            [],
+            (err, rows) => {
 
-            if (err) {
+                if (err) {
 
-                console.error(
-                    'Erro ao listar chamados:',
-                    err.message
-                );
+                    console.error(
+                        'Erro ao listar chamados:',
+                        err.message
+                    );
 
-                return res.status(500).json({
-                    error: 'Erro ao consultar chamados.'
-                });
+                    return res.status(500).json({
+                        error:
+                            'Erro ao consultar chamados.'
+                    });
+
+                }
+
+                return res.json(rows);
+
             }
+        );
 
-            return res.json(rows);
-        }
-    );
-
-});
+    }
+);
 
 // ===============================
 // CRIAR CHAMADO
@@ -284,8 +586,10 @@ app.post('/api/chamados', (req, res) => {
                 );
 
                 return res.status(500).json({
-                    error: 'Erro ao criar chamado.'
+                    error:
+                        'Erro ao criar chamado.'
                 });
+
             }
 
             const idGerado =
@@ -317,11 +621,13 @@ app.post('/api/chamados', (req, res) => {
                             error:
                                 'Chamado criado, mas houve erro ao gerar a OS.'
                         });
+
                     }
 
                     return res.status(201).json({
 
                         id: idGerado,
+
                         os,
 
                         equipamento:
@@ -361,7 +667,8 @@ app.put('/api/chamados/:id', (req, res) => {
     if (!/^\d+$/.test(id)) {
 
         return res.status(400).json({
-            error: 'ID do chamado inválido.'
+            error:
+                'ID do chamado inválido.'
         });
 
     }
@@ -371,31 +678,47 @@ app.put('/api/chamados/:id', (req, res) => {
         tecnico,
         descricao_solucao
     } = req.body || {};
-if (
-    status === undefined &&
-    tecnico === undefined &&
-    descricao_solucao === undefined
-) {
-    return res.status(400).json({
-        error: 'Informe pelo menos um campo para atualizar.'
-    });
-}if (
-    tecnico !== undefined &&
-    !String(tecnico).trim()
-) {
-    return res.status(400).json({
-        error: 'O campo tecnico não pode ficar vazio.'
-    });
-}
 
-if (
-    descricao_solucao !== undefined &&
-    !String(descricao_solucao).trim()
-) {
-    return res.status(400).json({
-        error: 'O campo descricao_solucao não pode ficar vazio.'
-    });
-}
+    // Pelo menos um campo
+    if (
+        status === undefined &&
+        tecnico === undefined &&
+        descricao_solucao === undefined
+    ) {
+
+        return res.status(400).json({
+            error:
+                'Informe pelo menos um campo para atualizar.'
+        });
+
+    }
+
+    // Técnico não pode ficar vazio
+    if (
+        tecnico !== undefined &&
+        !String(tecnico).trim()
+    ) {
+
+        return res.status(400).json({
+            error:
+                'O campo tecnico não pode ficar vazio.'
+        });
+
+    }
+
+    // Solução não pode ficar vazia
+    if (
+        descricao_solucao !== undefined &&
+        !String(descricao_solucao).trim()
+    ) {
+
+        return res.status(400).json({
+            error:
+                'O campo descricao_solucao não pode ficar vazio.'
+        });
+
+    }
+
     db.get(
         `
         SELECT *
@@ -413,15 +736,19 @@ if (
                 );
 
                 return res.status(500).json({
-                    error: 'Erro ao consultar chamado.'
+                    error:
+                        'Erro ao consultar chamado.'
                 });
+
             }
 
             if (!row) {
 
                 return res.status(404).json({
-                    error: 'Chamado não encontrado.'
+                    error:
+                        'Chamado não encontrado.'
                 });
+
             }
 
             const novoStatus =
@@ -458,7 +785,10 @@ if (
 
             }
 
-            // Controle da data de conclusão
+            // ===============================
+            // CONTROLE DA DATA DE CONCLUSÃO
+            // ===============================
+
             let data_conclusao =
                 row.data_conclusao;
 
@@ -508,6 +838,7 @@ if (
                             error:
                                 'Erro ao atualizar chamado.'
                         });
+
                     }
 
                     return res.json({
@@ -515,7 +846,8 @@ if (
                         message:
                             'Chamado atualizado com sucesso!',
 
-                        id: Number(id)
+                        id:
+                            Number(id)
 
                     });
 
@@ -540,7 +872,8 @@ app.delete('/api/chamados/:id', (req, res) => {
     if (!/^\d+$/.test(id)) {
 
         return res.status(400).json({
-            error: 'ID do chamado inválido.'
+            error:
+                'ID do chamado inválido.'
         });
 
     }
@@ -561,14 +894,17 @@ app.delete('/api/chamados/:id', (req, res) => {
                 );
 
                 return res.status(500).json({
-                    error: 'Erro ao excluir chamado.'
+                    error:
+                        'Erro ao excluir chamado.'
                 });
+
             }
 
             if (this.changes === 0) {
 
                 return res.status(404).json({
-                    error: 'Chamado não encontrado.'
+                    error:
+                        'Chamado não encontrado.'
                 });
 
             }
@@ -592,7 +928,8 @@ app.delete('/api/chamados/:id', (req, res) => {
 app.use((req, res) => {
 
     res.status(404).json({
-        error: 'Rota não encontrada.'
+        error:
+            'Rota não encontrada.'
     });
 
 });
@@ -609,7 +946,8 @@ app.use((err, req, res, next) => {
     );
 
     res.status(500).json({
-        error: 'Erro interno do servidor.'
+        error:
+            'Erro interno do servidor.'
     });
 
 });
@@ -619,6 +957,7 @@ app.use((err, req, res, next) => {
 // ===============================
 
 if (require.main === module) {
+
     app.listen(PORT, () => {
 
         console.log(
@@ -626,6 +965,11 @@ if (require.main === module) {
         );
 
     });
+
 }
+
+// ===============================
+// EXPORTAÇÃO PARA TESTES
+// ===============================
 
 module.exports = app;
