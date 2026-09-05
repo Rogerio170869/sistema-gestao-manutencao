@@ -70,7 +70,23 @@ function autenticarToken(req, res, next) {
     }
 
 }
+// ===============================
+// AUTORIZAÇÃO POR PERFIL
+// ===============================
 
+function autorizarGestor(req, res, next) {
+
+    if (!req.usuario || req.usuario.perfil !== 'gestor') {
+
+        return res.status(403).json({
+            error: 'Acesso negado. Apenas gestores podem realizar esta operação.'
+        });
+
+    }
+
+    next();
+
+}
 // ===============================
 // CONFIGURAÇÃO DO EXPRESS
 // ===============================
@@ -657,7 +673,7 @@ app.post('/api/chamados', autenticarToken, (req, res) => {
 // ATUALIZAR CHAMADO
 // ===============================
 
-app.put('/api/chamados/:id', autenticarToken, (req, res) => {
+app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
 
     const {
         id
@@ -863,7 +879,7 @@ app.put('/api/chamados/:id', autenticarToken, (req, res) => {
 // EXCLUIR CHAMADO
 // ===============================
 
-app.delete('/api/chamados/:id', autenticarToken, (req, res) => {
+app.delete('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
 
     const {
         id

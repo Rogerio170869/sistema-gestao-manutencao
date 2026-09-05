@@ -2,7 +2,45 @@ const request = require('supertest');
 const app = require('./server');
 const jwt = require('jsonwebtoken');
 describe('Health Check', () => {
+test('deve impedir operador de excluir chamado', async () => {
 
+    const loginOperador = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'operador',
+            senha: '123456'
+        });
+
+    const loginGestor = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .set('Authorization', `Bearer ${loginGestor.body.token}`)
+        .send({
+            equipamento: 'Chamado teste exclusão autorização',
+            tipo: 'Corretiva',
+            prioridade: 'Alta'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const resposta = await request(app)
+        .delete(`/api/chamados/${id}`)
+        .set('Authorization', `Bearer ${loginOperador.body.token}`);
+
+    expect(resposta.statusCode).toBe(403);
+
+    expect(resposta.body.error)
+        .toBe('Acesso negado. Apenas gestores podem realizar esta operação.');
+
+});
     test('deve retornar status 200 e serviço OK', async () => {
 
         const response = await request(app)
@@ -128,7 +166,6 @@ test('não deve retornar a senha no login', async () => {
     expect(response.body.usuario.senha)
         .toBeUndefined();
 
-});
 });
 
 describe('Chamados', () => {
@@ -658,8 +695,49 @@ test('deve rejeitar tecnico vazio na atualização', async () => {
             tecnico: '   '
         });
 
-    expect(resposta.statusCode).toBe(400);
-    expect(resposta.body.error)
+        expect(resposta.body.error)
         .toBe('O campo tecnico não pode ficar vazio.');
 
+});  // fecha "deve rejeitar tecnico vazio na atualização"
+test('deve impedir operador de alterar chamado', async () => {
+    const loginOperador = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'operador',
+            senha: '123456'
+        });
+
+    const loginGestor = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
+
+    const criado = await request(app)
+        .post('/api/chamados')
+        .set('Authorization', `Bearer ${loginGestor.body.token}`)
+        .send({
+            equipamento: 'Chamado teste autorização',
+            tipo: 'Corretiva',
+            prioridade: 'Alta'
+        });
+
+    expect(criado.statusCode).toBe(201);
+
+    const id = criado.body.id;
+
+    const resposta = await request(app)
+        .put(`/api/chamados/${id}`)
+        .set('Authorization', `Bearer ${loginOperador.body.token}`)
+        .send({
+            status: 'Em andamento'
+        });
+
+    expect(resposta.statusCode).toBe(403);
+
+    expect(resposta.body.error)
+        .toBe('Acesso negado. Apenas gestores podem realizar esta operação.');
+
+});
 });
