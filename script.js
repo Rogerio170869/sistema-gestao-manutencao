@@ -26,10 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ usuario: usuarioInput, senha: senhaInput })
                 });
 
-                if (resposta.ok) {
+                                 if (resposta.ok) {
                     const dados = await resposta.json();
                     usuarioLogado = dados.usuario;
+
                     sessionStorage.setItem('usuario_gestao_manutencao', JSON.stringify(usuarioLogado));
+                    sessionStorage.setItem('token_gestao_manutencao', dados.token);
+
                     iniciarSistema();
                 } else {
                     alert('Usuário ou senha incorretos.');
@@ -72,11 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                const resposta = await fetch(`${API_URL}/chamados`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(novoChamado)
-                });
+                const token = sessionStorage.getItem('token_gestao_manutencao');
+
+            const resposta = await fetch(`${API_URL}/chamados`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(novoChamado)
+});
 
                 if (resposta.ok) {
                     formChamado.reset();
@@ -100,11 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const descricao_solucao = document.getElementById('modal-solucao').value;
 
             try {
-                const resposta = await fetch(`${API_URL}/chamados/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tecnico, status, descricao_solucao })
-                });
+                const token = sessionStorage.getItem('token_gestao_manutencao');
+
+const resposta = await fetch(`${API_URL}/chamados/${id}`, {
+    method: 'PUT',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ tecnico, status, descricao_solucao })
+});
 
                 if (resposta.ok) {
                     fecharModal();
@@ -147,7 +160,18 @@ function fazerLogout() {
 
 async function carregarChamadosDaAPI() {
     try {
-        const resposta = await fetch(`${API_URL}/chamados`);
+        const token = sessionStorage.getItem('token_gestao_manutencao');
+
+        const resposta = await fetch(`${API_URL}/chamados`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!resposta.ok) {
+            throw new Error(`Erro HTTP ${resposta.status}`);
+        }
+
         chamados = await resposta.json();
         filtrarChamados();
     } catch (erro) {
@@ -267,7 +291,7 @@ function renderizarTabela(listaParaExibir = chamados) {
             celulaStatus = `
                 <select id="status-chamado-${chamado.id}" name="status_chamado_${chamado.id}" onchange="alterarStatus(${chamado.id}, this.value)">
                     <option value="Aberto" ${chamado.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-                    <option value="Em Andamento" ${chamado.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                    <option value="Em andamento" ${chamado.status === 'Em andamento' ? 'selected' : ''}>Em andamento</option>
                     <option value="Concluído" ${chamado.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
                 </select>
             `;
@@ -278,7 +302,7 @@ function renderizarTabela(listaParaExibir = chamados) {
             `;
         } else {
             if (chamado.status === 'Concluído') celulaStatus = `<span class="badge badge-concluido">Concluído</span>`;
-            if (chamado.status === 'Em Andamento') celulaStatus = `<span class="badge badge-andamento">Em Andamento</span>`;
+            if (chamado.status === 'Em andamento') celulaStatus = `<span class="badge badge-andamento">Em andamento</span>`;
             if (chamado.status === 'Aberto') celulaStatus = `<span class="badge badge-aberto">Aberto</span>`;
         }
 
@@ -320,15 +344,24 @@ function fecharModal() {
 
 async function alterarStatus(id, novoStatus) {
     try {
-        const resposta = await fetch(`${API_URL}/chamados/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: novoStatus })
-        });
+        const token = sessionStorage.getItem('token_gestao_manutencao');
+
+const resposta = await fetch(`${API_URL}/chamados/${id}`, {
+    method: 'PUT',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ status: novoStatus })
+});
 
         if (resposta.ok) {
-            carregarChamadosDaAPI();
-        }
+    await carregarChamadosDaAPI();
+} else {
+    const erro = await resposta.json();
+    console.error('Erro retornado pelo servidor:', erro);
+    alert(`Erro ao salvar status: ${erro.error || 'Erro desconhecido'}`);
+}
     } catch (erro) {
         console.error('Erro ao alterar status:', erro);
     }
@@ -337,9 +370,14 @@ async function alterarStatus(id, novoStatus) {
 async function excluirChamado(id) {
     if (confirm(`Tem certeza que deseja excluir o chamado #${id}?`)) {
         try {
-            const resposta = await fetch(`${API_URL}/chamados/${id}`, {
-                method: 'DELETE'
-            });
+            const token = sessionStorage.getItem('token_gestao_manutencao');
+
+const resposta = await fetch(`${API_URL}/chamados/${id}`, {
+    method: 'DELETE',
+    headers: {
+        'Authorization': `Bearer ${token}`
+    }
+});
 
             if (resposta.ok) {
                 carregarChamadosDaAPI();
