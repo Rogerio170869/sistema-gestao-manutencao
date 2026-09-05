@@ -657,7 +657,7 @@ app.post('/api/chamados', autenticarToken, (req, res) => {
 // ATUALIZAR CHAMADO
 // ===============================
 
-app.put('/api/chamados/:id', (req, res) => {
+app.put('/api/chamados/:id', autenticarToken, (req, res) => {
 
     const {
         id
@@ -863,7 +863,7 @@ app.put('/api/chamados/:id', (req, res) => {
 // EXCLUIR CHAMADO
 // ===============================
 
-app.delete('/api/chamados/:id', (req, res) => {
+app.delete('/api/chamados/:id', autenticarToken, (req, res) => {
 
     const {
         id

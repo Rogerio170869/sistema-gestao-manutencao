@@ -133,20 +133,33 @@ test('não deve retornar a senha no login', async () => {
 
 describe('Chamados', () => {
  test('deve rejeitar exclusão com ID inválido', async () => {
-
-    const response = await request(app)
-        .delete('/api/chamados/abc');
+    const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+const response = await request(app)
+    .delete('/api/chamados/abc')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
     expect(response.statusCode).toBe(400);
 
     expect(response.body.error)
         .toBe('ID do chamado inválido.');
-
 });   
-    test('deve retornar 404 ao atualizar chamado inexistente', async () => {
+test('deve retornar 404 ao atualizar chamado inexistente', async () => {
+
+    const login = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
 
     const response = await request(app)
         .put('/api/chamados/999999')
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             status: 'Em andamento'
         });
@@ -159,8 +172,16 @@ describe('Chamados', () => {
 });
 test('deve rejeitar atualização com ID inválido', async () => {
 
+    const login = await request(app)
+        .post('/api/login')
+        .send({
+            usuario: 'admin',
+            senha: '123456'
+        });
+
     const response = await request(app)
         .put('/api/chamados/abc')
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             status: 'Em andamento'
         });
@@ -170,7 +191,7 @@ test('deve rejeitar atualização com ID inválido', async () => {
     expect(response.body.error)
         .toBe('ID do chamado inválido.');
 
-});    
+});
 test('deve rejeitar chamado sem prioridade', async () => {
 
     const loginConsulta = await request(app)
@@ -245,10 +266,11 @@ const criado = await request(app)
         const id = criado.body.id;
 
         const atualizado = await request(app)
-            .put('/api/chamados/' + id)
-            .send({
-                status: 'Concluído'
-            });
+    .put(`/api/chamados/${id}`)
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        status: 'Concluído'
+    });
 
         expect(atualizado.statusCode).toBe(200);
 
@@ -276,8 +298,16 @@ const consulta = await request(app)
 
     test('deve retornar 404 ao excluir chamado inexistente', async () => {
 
-        const response = await request(app)
-            .delete('/api/chamados/999999');
+        const login = await request(app)
+    .post('/api/login')
+    .send({
+        usuario: 'admin',
+        senha: '123456'
+    });
+
+const response = await request(app)
+    .delete('/api/chamados/999999')
+    .set('Authorization', `Bearer ${login.body.token}`);
 
         expect(response.statusCode).toBe(404);
 
@@ -309,7 +339,8 @@ const criado = await request(app)
         const id = criado.body.id;
 
         const response = await request(app)
-            .delete('/api/chamados/' + id);
+            .delete('/api/chamados/' + id)
+            .set('Authorization', `Bearer ${login.body.token}`);
 
         expect(response.statusCode).toBe(200);
 
@@ -340,6 +371,7 @@ const login = await request(app)
 
         const response = await request(app)
             .put('/api/chamados/' + id)
+            .set('Authorization', `Bearer ${login.body.token}`)
             .send({
                 status: 'Status inexistente'
             });
@@ -373,6 +405,7 @@ const login = await request(app)
 
         const response = await request(app)
             .put('/api/chamados/' + id)
+            .set('Authorization', `Bearer ${login.body.token}`)
             .send({
                 status: 'Em andamento',
                 tecnico: 'Rogerio',
@@ -494,18 +527,20 @@ const criado = await request(app)
     const id = criado.body.id;
 
     const concluido = await request(app)
-        .put(`/api/chamados/${id}`)
-        .send({
-            status: 'Concluído'
-        });
+    .put(`/api/chamados/${id}`)
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        status: 'Concluído'
+    });
 
     expect(concluido.statusCode).toBe(200);
 
     const andamento = await request(app)
-        .put(`/api/chamados/${id}`)
-        .send({
-            status: 'Em andamento'
-        });
+    .put(`/api/chamados/${id}`)
+    .set('Authorization', `Bearer ${login.body.token}`)
+    .send({
+        status: 'Em andamento'
+    });
 
     expect(andamento.statusCode).toBe(200);
     const consulta = await request(app)
@@ -541,6 +576,7 @@ const login = await request(app)
 
     const atualizado = await request(app)
         .put(`/api/chamados/${id}`)
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             tecnico: 'Técnico Teste',
             descricao_solucao: 'Foi realizada a substituição do componente.'
@@ -584,6 +620,7 @@ const login = await request(app)
 
     const resposta = await request(app)
         .put(`/api/chamados/${id}`)
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({});
 
     expect(resposta.statusCode).toBe(400);
@@ -616,6 +653,7 @@ test('deve rejeitar tecnico vazio na atualização', async () => {
 
     const resposta = await request(app)
         .put(`/api/chamados/${id}`)
+        .set('Authorization', `Bearer ${login.body.token}`)
         .send({
             tecnico: '   '
         });
