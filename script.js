@@ -119,12 +119,17 @@ const resposta = await fetch(`${API_URL}/chamados/${id}`, {
     body: JSON.stringify({ tecnico, status, descricao_solucao })
 });
 
-                if (resposta.ok) {
-                    fecharModal();
-                    await carregarChamadosDaAPI();
-                } else {
-                    alert('Erro ao salvar alterações do chamado.');
-                }
+if (resposta.status === 401) {
+    tratarSessaoExpirada();
+    return;
+}
+
+if (resposta.ok) {
+    fecharModal();
+    await carregarChamadosDaAPI();
+} else {
+    alert('Erro ao salvar alterações do chamado.');
+}
             } catch (erro) {
                 console.error('Erro ao atualizar chamado:', erro);
             }
@@ -154,10 +159,24 @@ function iniciarSistema() {
 
 function fazerLogout() {
     sessionStorage.removeItem('usuario_gestao_manutencao');
+    sessionStorage.removeItem('token_gestao_manutencao');
+
     usuarioLogado = null;
+    chamados = [];
+
     location.reload();
 }
+function tratarSessaoExpirada() {
+    sessionStorage.removeItem('usuario_gestao_manutencao');
+    sessionStorage.removeItem('token_gestao_manutencao');
 
+    usuarioLogado = null;
+    chamados = [];
+
+    alert('Sua sessão expirou. Faça login novamente.');
+
+    location.reload();
+}
 async function carregarChamadosDaAPI() {
     try {
         const token = sessionStorage.getItem('token_gestao_manutencao');
@@ -167,10 +186,17 @@ async function carregarChamadosDaAPI() {
                 'Authorization': `Bearer ${token}`
             }
         });
-
+        if (resposta.status === 401) {
+    tratarSessaoExpirada();
+    return;
+}
+if (resposta.status === 401) {
+    tratarSessaoExpirada();
+    return;
+}
         if (!resposta.ok) {
-            throw new Error(`Erro HTTP ${resposta.status}`);
-        }
+    throw new Error(`Erro HTTP ${resposta.status}`);
+}
 
         chamados = await resposta.json();
         filtrarChamados();
@@ -355,6 +381,10 @@ const resposta = await fetch(`${API_URL}/chamados/${id}`, {
     body: JSON.stringify({ status: novoStatus })
 });
 
+if (resposta.status === 401) {
+    tratarSessaoExpirada();
+    return;
+}
         if (resposta.ok) {
     await carregarChamadosDaAPI();
 } else {
@@ -378,7 +408,10 @@ const resposta = await fetch(`${API_URL}/chamados/${id}`, {
         'Authorization': `Bearer ${token}`
     }
 });
-
+if (resposta.status === 401) {
+    tratarSessaoExpirada();
+    return;
+}
             if (resposta.ok) {
                 carregarChamadosDaAPI();
             }
