@@ -83,15 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
         formChamado.addEventListener('submit', async function (event) {
             event.preventDefault();
 
-            const equipamentoInput = document.getElementById('equipamento-chamado').value;
-            const tipoInput = document.getElementById('tipo-manutencao').value;
-            const prioridadeInput = document.getElementById('prioridade').value;
+const equipamentoInput = document.getElementById('equipamento-chamado').value;
+const tipoInput = document.getElementById('tipo-manutencao').value;
+const prioridadeInput = document.getElementById('prioridade').value;
+const descricaoFalhaInput = document.getElementById('descricao-falha').value;
 
-            const novoChamado = {
-                equipamento: equipamentoInput,
-                tipo: tipoInput,
-                prioridade: prioridadeInput
-            };
+const novoChamado = {
+    equipamento: equipamentoInput,
+    tipo: tipoInput,
+    prioridade: prioridadeInput,
+    descricao_falha: descricaoFalhaInput
+};
 
 try {
     const resposta = await fetchAutenticado(`${API_URL}/chamados`, {
@@ -125,16 +127,22 @@ try {
             const id = document.getElementById('modal-chamado-id').value;
             const tecnico = document.getElementById('modal-tecnico').value;
             const status = document.getElementById('modal-status').value;
+            const descricao_falha = document.getElementById('modal-descricao-falha').value;
             const descricao_solucao = document.getElementById('modal-solucao').value;
 
             try {
                 const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
-    method: 'PUT',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ tecnico, status, descricao_solucao })
-});
+                    method: 'PUT',
+                    headers: {
+                     'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tecnico,
+                        status,
+                        descricao_solucao,
+                        descricao_falha
+        })
+    });
 
 if (!resposta) {
     return;
@@ -371,9 +379,10 @@ function abrirModalEdicao(id) {
 
     document.getElementById('modal-chamado-id').value = chamado.id;
     document.getElementById('modal-os-titulo').textContent = chamado.os || String(chamado.id).padStart(3, '0');
-    document.getElementById('modal-tecnico').value = chamado.tecnico || '';
-    document.getElementById('modal-status').value = chamado.status || 'Aberto';
-    document.getElementById('modal-solucao').value = chamado.descricao_solucao || '';
+document.getElementById('modal-tecnico').value = chamado.tecnico || '';
+document.getElementById('modal-status').value = chamado.status || 'Aberto';
+document.getElementById('modal-descricao-falha').value = chamado.descricao_falha || '';
+document.getElementById('modal-solucao').value = chamado.descricao_solucao || '';
 
     const modal = document.getElementById('modal-edicao');
     if (modal) modal.style.display = 'flex';

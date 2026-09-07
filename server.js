@@ -155,7 +155,43 @@ db.serialize(() => {
         }
 
     });
+db.all(`PRAGMA table_info(chamados)`, (err, colunas) => {
 
+    if (err) {
+        console.error(
+            'Erro ao verificar estrutura da tabela chamados:',
+            err.message
+        );
+        return;
+    }
+
+    const colunaExiste = colunas.some(
+        coluna => coluna.name === 'descricao_falha'
+    );
+
+    if (!colunaExiste) {
+
+        db.run(
+            `ALTER TABLE chamados ADD COLUMN descricao_falha TEXT`,
+            (alterErr) => {
+
+                if (alterErr) {
+                    console.error(
+                        'Erro ao adicionar coluna descricao_falha:',
+                        alterErr.message
+                    );
+                } else {
+                    console.log(
+                        'Coluna descricao_falha adicionada com sucesso.'
+                    );
+                }
+
+            }
+        );
+
+    }
+
+});
     // ===============================
     // TABELA DE USUÁRIOS
     // ===============================
@@ -563,10 +599,11 @@ app.post('/api/chamados', autenticarToken, (req, res) => {
     }
 
     const {
-        equipamento,
-        tipo,
-        prioridade
-    } = req.body;
+    equipamento,
+    tipo,
+    prioridade,
+    descricao_falha
+} = req.body;
 
     const status = 'Aberto';
 
@@ -576,22 +613,26 @@ app.post('/api/chamados', autenticarToken, (req, res) => {
     db.run(
         `
         INSERT INTO chamados
-        (
-            equipamento,
-            tipo,
-            prioridade,
-            status,
-            data_abertura
-        )
-        VALUES (?, ?, ?, ?, ?)
+(
+    equipamento,
+    tipo,
+    prioridade,
+    status,
+    data_abertura,
+    descricao_falha
+)
+VALUES (?, ?, ?, ?, ?, ?)
         `,
         [
-            String(equipamento).trim(),
-            String(tipo).trim(),
-            String(prioridade).trim(),
-            status,
-            data_abertura
-        ],
+    String(equipamento).trim(),
+    String(tipo).trim(),
+    String(prioridade).trim(),
+    status,
+    data_abertura,
+    descricao_falha !== undefined
+        ? String(descricao_falha).trim()
+        : ''
+],
         function (err) {
 
             if (err) {
@@ -657,8 +698,11 @@ app.post('/api/chamados', autenticarToken, (req, res) => {
 
                         status,
 
-                        data_abertura
-
+                        data_abertura,
+                        descricao_falha:
+    descricao_falha !== undefined
+        ? String(descricao_falha).trim()
+        : ''
                     });
 
                 }
@@ -690,16 +734,18 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
     }
 
     const {
-        status,
-        tecnico,
-        descricao_solucao
-    } = req.body || {};
+    status,
+    tecnico,
+    descricao_solucao,
+    descricao_falha
+} = req.body || {};
 
     // Pelo menos um campo
     if (
         status === undefined &&
         tecnico === undefined &&
-        descricao_solucao === undefined
+        descricao_solucao === undefined &&
+        descricao_falha === undefined
     ) {
 
         return res.status(400).json({
@@ -781,7 +827,10 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
                 descricao_solucao !== undefined
                     ? String(descricao_solucao).trim()
                     : row.descricao_solucao;
-
+            const novaFalha =
+                descricao_falha !== undefined
+                    ? String(descricao_falha).trim()
+                    : row.descricao_falha;
             // Status permitidos
             const statusPermitidos = [
                 'Aberto',
@@ -828,19 +877,21 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
                 `
                 UPDATE chamados
                 SET
-                    status = ?,
-                    tecnico = ?,
-                    descricao_solucao = ?,
-                    data_conclusao = ?
+                   status = ?,
+                   tecnico = ?,
+                   descricao_falha = ?,
+                   descricao_solucao = ?,
+                   data_conclusao = ?
                 WHERE id = ?
                 `,
                 [
-                    novoStatus,
-                    novoTecnico || null,
-                    novaSolucao || null,
-                    data_conclusao,
-                    id
-                ],
+    novoStatus,
+    novoTecnico || null,
+    novaFalha || null,
+    novaSolucao || null,
+    data_conclusao,
+    id
+],
                 function (updateErr) {
 
                     if (updateErr) {
