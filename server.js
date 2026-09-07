@@ -165,31 +165,66 @@ db.all(`PRAGMA table_info(chamados)`, (err, colunas) => {
         return;
     }
 
-    const colunaExiste = colunas.some(
-        coluna => coluna.name === 'descricao_falha'
-    );
+    const colunaDescricaoFalhaExiste = colunas.some(
+    coluna => coluna.name === 'descricao_falha'
+);
 
-    if (!colunaExiste) {
+    const colunaCausaFalhaExiste = colunas.some(
+    coluna => coluna.name === 'causa_falha'
+);
 
-        db.run(
-            `ALTER TABLE chamados ADD COLUMN descricao_falha TEXT`,
-            (alterErr) => {
+    if (!colunaDescricaoFalhaExiste) {
 
-                if (alterErr) {
-                    console.error(
-                        'Erro ao adicionar coluna descricao_falha:',
-                        alterErr.message
-                    );
-                } else {
-                    console.log(
-                        'Coluna descricao_falha adicionada com sucesso.'
-                    );
-                }
+    db.run(
+        `ALTER TABLE chamados ADD COLUMN descricao_falha TEXT`,
+        (alterErr) => {
+
+            if (alterErr) {
+
+                console.error(
+                    'Erro ao adicionar coluna descricao_falha:',
+                    alterErr.message
+                );
+
+            } else {
+
+                console.log(
+                    'Coluna descricao_falha adicionada com sucesso.'
+                );
 
             }
-        );
 
-    }
+        }
+    );
+
+}
+
+if (!colunaCausaFalhaExiste) {
+
+    db.run(
+        `ALTER TABLE chamados ADD COLUMN causa_falha TEXT`,
+        (alterErr) => {
+
+            if (alterErr) {
+
+                console.error(
+                    'Erro ao adicionar coluna causa_falha:',
+                    alterErr.message
+                );
+
+            } else {
+
+                console.log(
+                    'Coluna causa_falha adicionada com sucesso.'
+                );
+
+            }
+
+        }
+    );
+
+}
+
 
 });
     // ===============================
@@ -733,20 +768,22 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
 
     }
 
-    const {
+const {
     status,
     tecnico,
     descricao_solucao,
-    descricao_falha
+    descricao_falha,
+    causa_falha
 } = req.body || {};
 
     // Pelo menos um campo
-    if (
-        status === undefined &&
-        tecnico === undefined &&
-        descricao_solucao === undefined &&
-        descricao_falha === undefined
-    ) {
+if (
+    status === undefined &&
+    tecnico === undefined &&
+    descricao_solucao === undefined &&
+    descricao_falha === undefined &&
+    causa_falha === undefined
+) {
 
         return res.status(400).json({
             error:
@@ -767,20 +804,6 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
         });
 
     }
-
-    // Solução não pode ficar vazia
-    if (
-        descricao_solucao !== undefined &&
-        !String(descricao_solucao).trim()
-    ) {
-
-        return res.status(400).json({
-            error:
-                'O campo descricao_solucao não pode ficar vazio.'
-        });
-
-    }
-
     db.get(
         `
         SELECT *
@@ -813,24 +836,28 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
 
             }
 
-            const novoStatus =
+const novoStatus =
                 status !== undefined
                     ? String(status).trim()
                     : row.status;
-
-            const novoTecnico =
+const novoTecnico =
                 tecnico !== undefined
                     ? String(tecnico).trim()
                     : row.tecnico;
+const novaSolucao =
+    descricao_solucao !== undefined
+        ? String(descricao_solucao).trim()
+        : row.descricao_solucao;
 
-            const novaSolucao =
-                descricao_solucao !== undefined
-                    ? String(descricao_solucao).trim()
-                    : row.descricao_solucao;
-            const novaFalha =
-                descricao_falha !== undefined
-                    ? String(descricao_falha).trim()
-                    : row.descricao_falha;
+const novaCausa =
+    causa_falha !== undefined
+        ? String(causa_falha).trim()
+        : row.causa_falha;
+
+const novaFalha =
+    descricao_falha !== undefined
+        ? String(descricao_falha).trim()
+        : row.descricao_falha;
             // Status permitidos
             const statusPermitidos = [
                 'Aberto',
@@ -880,18 +907,20 @@ app.put('/api/chamados/:id', autenticarToken, autorizarGestor, (req, res) => {
                    status = ?,
                    tecnico = ?,
                    descricao_falha = ?,
+                   causa_falha = ?,
                    descricao_solucao = ?,
                    data_conclusao = ?
                 WHERE id = ?
                 `,
                 [
-    novoStatus,
-    novoTecnico || null,
-    novaFalha || null,
-    novaSolucao || null,
-    data_conclusao,
-    id
-],
+                    novoStatus,
+                    novoTecnico || null,
+                    novaFalha || null,
+                    novaCausa || null,
+                    novaSolucao || null,
+                    data_conclusao,
+                    id
+                ],
                 function (updateErr) {
 
                     if (updateErr) {

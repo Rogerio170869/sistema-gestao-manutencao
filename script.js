@@ -127,8 +127,12 @@ try {
             const id = document.getElementById('modal-chamado-id').value;
             const tecnico = document.getElementById('modal-tecnico').value;
             const status = document.getElementById('modal-status').value;
-            const descricao_falha = document.getElementById('modal-descricao-falha').value;
-            const descricao_solucao = document.getElementById('modal-solucao').value;
+            const descricao_falha =
+                document.getElementById('modal-descricao-falha').value;
+            const causa_falha =
+                document.getElementById('modal-causa-falha').value;
+            const descricao_solucao =
+                document.getElementById('modal-solucao').value;
 
             try {
                 const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
@@ -139,9 +143,10 @@ try {
                     body: JSON.stringify({
                         tecnico,
                         status,
-                        descricao_solucao,
-                        descricao_falha
-        })
+                        descricao_falha,
+                        causa_falha,
+                        descricao_solucao
+                 })
     });
 
 if (!resposta) {
@@ -379,11 +384,14 @@ function abrirModalEdicao(id) {
 
     document.getElementById('modal-chamado-id').value = chamado.id;
     document.getElementById('modal-os-titulo').textContent = chamado.os || String(chamado.id).padStart(3, '0');
-document.getElementById('modal-tecnico').value = chamado.tecnico || '';
-document.getElementById('modal-status').value = chamado.status || 'Aberto';
-document.getElementById('modal-descricao-falha').value = chamado.descricao_falha || '';
-document.getElementById('modal-solucao').value = chamado.descricao_solucao || '';
-
+    document.getElementById('modal-tecnico').value = chamado.tecnico || '';
+    document.getElementById('modal-status').value = chamado.status || 'Aberto';
+    document.getElementById('modal-descricao-falha').value =
+    chamado.descricao_falha || '';
+    document.getElementById('modal-causa-falha').value =
+    chamado.causa_falha || '';
+    document.getElementById('modal-solucao').value =
+    chamado.descricao_solucao || '';
     const modal = document.getElementById('modal-edicao');
     if (modal) modal.style.display = 'flex';
 }
