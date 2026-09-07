@@ -4,7 +4,26 @@ let chamados = [];
 let usuarioLogado = null;
 let chartTiposInstance = null;
 let chartPrioridadesInstance = null;
+async function fetchAutenticado(url, opcoes = {}) {
+    const token = sessionStorage.getItem('token_gestao_manutencao');
 
+    const headers = {
+        ...(opcoes.headers || {}),
+        'Authorization': `Bearer ${token}`
+    };
+
+    const resposta = await fetch(url, {
+        ...opcoes,
+        headers
+    });
+
+    if (resposta.status === 401) {
+        tratarSessaoExpirada();
+        return null;
+    }
+
+    return resposta;
+}
 document.addEventListener('DOMContentLoaded', () => {
     verificarSessao();
 
@@ -74,17 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 prioridade: prioridadeInput
             };
 
-            try {
-                const token = sessionStorage.getItem('token_gestao_manutencao');
+try {
+    const resposta = await fetchAutenticado(`${API_URL}/chamados`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(novoChamado)
+    });
 
-            const resposta = await fetch(`${API_URL}/chamados`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(novoChamado)
-});
+    if (!resposta) {
+        return;
+    }
 
                 if (resposta.ok) {
                     formChamado.reset();
@@ -108,19 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const descricao_solucao = document.getElementById('modal-solucao').value;
 
             try {
-                const token = sessionStorage.getItem('token_gestao_manutencao');
-
-const resposta = await fetch(`${API_URL}/chamados/${id}`, {
+                const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
     method: 'PUT',
     headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
     },
     body: JSON.stringify({ tecnico, status, descricao_solucao })
 });
 
-if (resposta.status === 401) {
-    tratarSessaoExpirada();
+if (!resposta) {
     return;
 }
 
@@ -370,19 +386,15 @@ function fecharModal() {
 
 async function alterarStatus(id, novoStatus) {
     try {
-        const token = sessionStorage.getItem('token_gestao_manutencao');
-
-const resposta = await fetch(`${API_URL}/chamados/${id}`, {
+    const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
     method: 'PUT',
     headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
     },
     body: JSON.stringify({ status: novoStatus })
 });
 
-if (resposta.status === 401) {
-    tratarSessaoExpirada();
+if (!resposta) {
     return;
 }
         if (resposta.ok) {
@@ -400,16 +412,11 @@ if (resposta.status === 401) {
 async function excluirChamado(id) {
     if (confirm(`Tem certeza que deseja excluir o chamado #${id}?`)) {
         try {
-            const token = sessionStorage.getItem('token_gestao_manutencao');
-
-const resposta = await fetch(`${API_URL}/chamados/${id}`, {
-    method: 'DELETE',
-    headers: {
-        'Authorization': `Bearer ${token}`
-    }
+            const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
+    method: 'DELETE'
 });
-if (resposta.status === 401) {
-    tratarSessaoExpirada();
+
+if (!resposta) {
     return;
 }
             if (resposta.ok) {
