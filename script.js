@@ -134,6 +134,21 @@ try {
             const descricao_solucao =
                 document.getElementById('modal-solucao').value;
 
+            if (status === 'Concluído') {
+                if (!descricao_falha.trim()) {
+                    alert('Para concluir o chamado, informe a descrição da falha.');
+                    return;
+                }
+                if (!causa_falha.trim()) {
+                    alert('Para concluir o chamado, informe a causa da falha.');
+                    return;
+                }
+                if (!descricao_solucao.trim()) {
+                    alert('Para concluir o chamado, informe a solução executada.');
+                    return;
+                }
+            }
+
             try {
                 const resposta = await fetchAutenticado(`${API_URL}/chamados/${id}`, {
                     method: 'PUT',
@@ -392,6 +407,22 @@ function abrirModalEdicao(id) {
     chamado.causa_falha || '';
     document.getElementById('modal-solucao').value =
     chamado.descricao_solucao || '';
+
+    const campoInicio = document.getElementById('modal-data-inicio-atendimento');
+    const campoConclusao = document.getElementById('modal-data-conclusao');
+
+    if (campoInicio) {
+        campoInicio.value = chamado.data_inicio_atendimento
+            ? formatarData(chamado.data_inicio_atendimento)
+            : '';
+    }
+
+    if (campoConclusao) {
+        campoConclusao.value = chamado.data_conclusao
+            ? formatarData(chamado.data_conclusao)
+            : '';
+    }
+
     const modal = document.getElementById('modal-edicao');
     if (modal) modal.style.display = 'flex';
 }

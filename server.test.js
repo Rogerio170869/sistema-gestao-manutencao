@@ -306,7 +306,10 @@ const criado = await request(app)
     .put(`/api/chamados/${id}`)
     .set('Authorization', `Bearer ${login.body.token}`)
     .send({
-        status: 'Concluído'
+        status: 'Concluído',
+        descricao_falha: 'Falha identificada durante o teste.',
+        causa_falha: 'Causa identificada durante o teste.',
+        descricao_solucao: 'Solução executada durante o teste.'
     });
 
         expect(atualizado.statusCode).toBe(200);
@@ -567,7 +570,10 @@ const criado = await request(app)
     .put(`/api/chamados/${id}`)
     .set('Authorization', `Bearer ${login.body.token}`)
     .send({
-        status: 'Concluído'
+        status: 'Concluído',
+        descricao_falha: 'Falha para teste de transição.',
+        causa_falha: 'Causa para teste de transição.',
+        descricao_solucao: 'Solução para teste de transição.'
     });
 
     expect(concluido.statusCode).toBe(200);

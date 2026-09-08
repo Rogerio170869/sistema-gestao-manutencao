@@ -139,6 +139,7 @@ db.serialize(() => {
             prioridade TEXT NOT NULL,
             status TEXT NOT NULL,
             data_abertura TEXT NOT NULL,
+            data_inicio_atendimento TEXT,
             data_conclusao TEXT,
             tecnico TEXT,
             descricao_solucao TEXT
@@ -171,6 +172,10 @@ db.all(`PRAGMA table_info(chamados)`, (err, colunas) => {
 
     const colunaCausaFalhaExiste = colunas.some(
     coluna => coluna.name === 'causa_falha'
+);
+
+    const colunaDataInicioAtendimentoExiste = colunas.some(
+    coluna => coluna.name === 'data_inicio_atendimento'
 );
 
     if (!colunaDescricaoFalhaExiste) {
@@ -216,6 +221,32 @@ if (!colunaCausaFalhaExiste) {
 
                 console.log(
                     'Coluna causa_falha adicionada com sucesso.'
+                );
+
+            }
+
+        }
+    );
+
+}
+
+if (!colunaDataInicioAtendimentoExiste) {
+
+    db.run(
+        `ALTER TABLE chamados ADD COLUMN data_inicio_atendimento TEXT`,
+        (alterErr) => {
+
+            if (alterErr) {
+
+                console.error(
+                    'Erro ao adicionar coluna data_inicio_atendimento:',
+                    alterErr.message
+                );
+
+            } else {
+
+                console.log(
+                    'Coluna data_inicio_atendimento adicionada com sucesso.'
                 );
 
             }
@@ -878,23 +909,59 @@ const novaFalha =
             }
 
             // ===============================
-            // CONTROLE DA DATA DE CONCLUSÃO
+            // CONTROLE DO CICLO DE VIDA
             // ===============================
+
+            let data_inicio_atendimento =
+                row.data_inicio_atendimento;
 
             let data_conclusao =
                 row.data_conclusao;
 
+            // Ao iniciar o atendimento, registra a primeira data/hora.
+            // O valor é preservado mesmo se o chamado voltar para Aberto.
             if (
-                novoStatus === 'Concluído' &&
-                !row.data_conclusao
+                novoStatus === 'Em andamento' &&
+                !data_inicio_atendimento
             ) {
 
-                data_conclusao =
+                data_inicio_atendimento =
                     new Date().toISOString();
 
-            } else if (
-                novoStatus !== 'Concluído'
-            ) {
+            }
+
+            // Para concluir, exige o preenchimento mínimo do diagnóstico e da execução.
+            if (novoStatus === 'Concluído') {
+
+                if (!novaFalha) {
+                    return res.status(400).json({
+                        error: 'Para concluir o chamado, informe a descrição da falha.'
+                    });
+                }
+
+                if (!novaCausa) {
+                    return res.status(400).json({
+                        error: 'Para concluir o chamado, informe a causa da falha.'
+                    });
+                }
+
+                if (!novaSolucao) {
+                    return res.status(400).json({
+                        error: 'Para concluir o chamado, informe a solução executada.'
+                    });
+                }
+
+                if (!data_inicio_atendimento) {
+                    data_inicio_atendimento =
+                        new Date().toISOString();
+                }
+
+                if (!row.data_conclusao) {
+                    data_conclusao =
+                        new Date().toISOString();
+                }
+
+            } else {
 
                 data_conclusao = null;
 
@@ -909,7 +976,8 @@ const novaFalha =
                    descricao_falha = ?,
                    causa_falha = ?,
                    descricao_solucao = ?,
-                   data_conclusao = ?
+                   data_conclusao = ?,
+                   data_inicio_atendimento = ?
                 WHERE id = ?
                 `,
                 [
@@ -919,6 +987,7 @@ const novaFalha =
                     novaCausa || null,
                     novaSolucao || null,
                     data_conclusao,
+                    data_inicio_atendimento,
                     id
                 ],
                 function (updateErr) {
