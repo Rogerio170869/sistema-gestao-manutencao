@@ -4,6 +4,7 @@ let chamados = [];
 let usuarioLogado = null;
 let chartTiposInstance = null;
 let chartPrioridadesInstance = null;
+let chartMTTRTiposInstance = null;
 async function fetchAutenticado(url, opcoes = {}) {
     const token = sessionStorage.getItem('token_gestao_manutencao');
 
@@ -269,18 +270,23 @@ function atualizarDashboard(listaParaExibir = chamados) {
     const pendentesCount = total - concluidosCount;
 
     let mttrTexto = '0h';
-    if (concluidosCount > 0) {
-        const totalHoras = chamadosConcluidos.reduce((acc, c) => {
-            if (c.data_abertura && c.data_conclusao) {
-                const diffMs = new Date(c.data_conclusao) - new Date(c.data_abertura);
-                return acc + (diffMs / (1000 * 60 * 60));
-            }
-            return acc;
-        }, 0);
 
-        const mttrMedio = (totalHoras / concluidosCount).toFixed(1);
-        mttrTexto = `${mttrMedio}h`;
-    }
+const chamadosComMTTR = chamadosConcluidos.filter(c =>
+    c.data_inicio_atendimento && c.data_conclusao
+);
+
+if (chamadosComMTTR.length > 0) {
+    const totalHoras = chamadosComMTTR.reduce((acc, c) => {
+        const diffMs =
+            new Date(c.data_conclusao) -
+            new Date(c.data_inicio_atendimento);
+
+        return acc + (diffMs / (1000 * 60 * 60));
+    }, 0);
+
+    const mttrMedio = (totalHoras / chamadosComMTTR.length).toFixed(1);
+    mttrTexto = `${mttrMedio}h`;
+}
 
     totalElemento.textContent = total;
     pendentesElemento.textContent = pendentesCount;
@@ -289,10 +295,10 @@ function atualizarDashboard(listaParaExibir = chamados) {
 
     renderizarGraficos(listaParaExibir);
 }
-
 function renderizarGraficos(dados) {
     const ctxTipos = document.getElementById('chartTipos');
     const ctxPrioridades = document.getElementById('chartPrioridades');
+    const ctxMTTRTipos = document.getElementById('chartMTTRTipos');
 
     if (!ctxTipos || !ctxPrioridades) return;
 
@@ -306,6 +312,7 @@ function renderizarGraficos(dados) {
 
     if (chartTiposInstance) chartTiposInstance.destroy();
     if (chartPrioridadesInstance) chartPrioridadesInstance.destroy();
+    if (chartMTTRTiposInstance) chartMTTRTiposInstance.destroy();
 
     chartTiposInstance = new Chart(ctxTipos, {
         type: 'doughnut',
@@ -316,7 +323,10 @@ function renderizarGraficos(dados) {
                 backgroundColor: ['#ef4444', '#3b82f6', '#10b981']
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
     });
 
     chartPrioridadesInstance = new Chart(ctxPrioridades, {
@@ -329,8 +339,71 @@ function renderizarGraficos(dados) {
                 backgroundColor: ['#dc2626', '#f59e0b', '#84cc16']
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
     });
+
+    // MTTR por tipo de manutenção
+    if (ctxMTTRTipos) {
+        const tipos = ['Corretiva', 'Preventiva', 'Preditiva'];
+
+        const mttrPorTipo = tipos.map(tipo => {
+            const chamadosConcluidos = dados.filter(c =>
+                c.tipo === tipo &&
+                c.status === 'Concluído' &&
+                c.data_inicio_atendimento &&
+                c.data_conclusao
+            );
+
+            if (chamadosConcluidos.length === 0) {
+                return 0;
+            }
+
+            const totalHoras = chamadosConcluidos.reduce((acc, c) => {
+                const inicio = new Date(c.data_inicio_atendimento);
+                const conclusao = new Date(c.data_conclusao);
+                const diffMs = conclusao - inicio;
+
+                return acc + (diffMs / (1000 * 60 * 60));
+            }, 0);
+
+            return Number(
+                (totalHoras / chamadosConcluidos.length).toFixed(1)
+            );
+        });
+
+        chartMTTRTiposInstance = new Chart(ctxMTTRTipos, {
+            type: 'bar',
+            data: {
+                labels: tipos,
+                datasets: [{
+                    label: 'MTTR Médio (horas)',
+                    data: mttrPorTipo,
+                    backgroundColor: ['#ef4444', '#3b82f6', '#10b981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Horas'
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 function renderizarTabela(listaParaExibir = chamados) {
