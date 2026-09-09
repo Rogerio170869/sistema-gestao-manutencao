@@ -6,6 +6,8 @@ let chartTiposInstance = null;
 let chartPrioridadesInstance = null;
 let chartMTTRTiposInstance = null;
 let chartEquipamentosInstance = null;
+let chartTendenciaInstance = null;
+let chartStatusInstance = null;
 async function fetchAutenticado(url, opcoes = {}) {
     const token = sessionStorage.getItem('token_gestao_manutencao');
 
@@ -529,7 +531,58 @@ function renderizarGraficos(dados) {
             maintainAspectRatio: false
         }
     });
+    // Distribuição de chamados por status
 
+    const contagemStatus = {
+        'Aberto': 0,
+        'Em andamento': 0,
+        'Concluído': 0
+    };
+
+    dados.forEach(chamado => {
+
+        const status = chamado.status;
+
+        if (contagemStatus.hasOwnProperty(status)) {
+            contagemStatus[status]++;
+        }
+    });
+
+    const canvasStatus =
+        document.getElementById('graficoStatusChamados');
+
+    if (canvasStatus) {
+
+        if (chartStatusInstance) {
+            chartStatusInstance.destroy();
+        }
+
+        chartStatusInstance =
+            new Chart(canvasStatus, {
+                type: 'doughnut',
+
+                data: {
+                    labels: [
+                        'Aberto',
+                        'Em andamento',
+                        'Concluído'
+                    ],
+
+                    datasets: [{
+                        data: [
+                            contagemStatus['Aberto'],
+                            contagemStatus['Em andamento'],
+                            contagemStatus['Concluído']
+                        ]
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+    }
     chartPrioridadesInstance = new Chart(ctxPrioridades, {
         type: 'bar',
         data: {
@@ -550,7 +603,98 @@ function renderizarGraficos(dados) {
             }
         }
     });
+    // Tendência de chamados ao longo do tempo
 
+    const contagemPorData = {};
+
+    dados.forEach(chamado => {
+
+        if (!chamado.data_abertura) {
+            return;
+        }
+
+        const data = new Date(chamado.data_abertura);
+
+        if (isNaN(data.getTime())) {
+            return;
+        }
+
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+
+        const chave = `${ano}-${mes}`;
+
+        contagemPorData[chave] =
+            (contagemPorData[chave] || 0) + 1;
+    });
+
+    const tendenciaOrdenada =
+        Object.entries(contagemPorData)
+            .sort((a, b) => a[0].localeCompare(b[0]));
+
+    const labelsTendencia =
+        tendenciaOrdenada.map(item => {
+
+            const [ano, mes] = item[0].split('-');
+
+            return `${mes}/${ano}`;
+        });
+
+    const valoresTendencia =
+        tendenciaOrdenada.map(item => item[1]);
+
+    const canvasTendencia =
+        document.getElementById('graficoTendenciaChamados');
+
+    if (canvasTendencia) {
+
+        if (chartTendenciaInstance) {
+            chartTendenciaInstance.destroy();
+        }
+
+        chartTendenciaInstance =
+            new Chart(canvasTendencia, {
+                type: 'line',
+
+                data: {
+                    labels: labelsTendencia,
+
+                    datasets: [{
+                        label: 'Chamados',
+                        data: valoresTendencia,
+                        tension: 0.3,
+                        fill: false
+                    }]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                precision: 0
+                            },
+
+                            title: {
+                                display: true,
+                                text: 'Quantidade de chamados'
+                            }
+                        },
+
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Período'
+                            }
+                        }
+                    }
+                }
+            });
+    }
     // MTTR por tipo de manutenção
     if (ctxMTTRTipos) {
         const tipos = ['Corretiva', 'Preventiva', 'Preditiva'];
@@ -609,9 +753,12 @@ function renderizarGraficos(dados) {
   // Equipamentos com mais falhas
     const contagemEquipamentos = {};
 
-    dados.forEach(chamado => {
+dados
+    .filter(chamado => chamado.tipo === 'Corretiva')
+    .forEach(chamado => {
 
-        const equipamento = chamado.equipamento || 'Não informado';
+        const equipamento =
+            chamado.equipamento || 'Não informado';
 
         contagemEquipamentos[equipamento] =
             (contagemEquipamentos[equipamento] || 0) + 1;
