@@ -391,7 +391,9 @@ function atualizarDashboard(listaParaExibir = chamados) {
     const chamadosConcluidos = listaParaExibir.filter(c => c.status === 'Concluído');
     const concluidosCount = chamadosConcluidos.length;
     const pendentesCount = total - concluidosCount;
-
+    const taxaConclusao = total > 0
+    ? (concluidosCount / total) * 100
+    : 0;
     let mttrTexto = '0h';
     let mtbfTexto = '0h';
 
@@ -469,11 +471,20 @@ function atualizarDashboard(listaParaExibir = chamados) {
 
         mtbfTexto = `${mtbfMedio}h`;
     }
-    totalElemento.textContent = total;
-    pendentesElemento.textContent = pendentesCount;
-    concluidosElemento.textContent = concluidosCount;
-    if (mttrElemento) mttrElemento.textContent = mttrTexto;
-    if (mtbfElemento) mtbfElemento.textContent = mtbfTexto;
+totalElemento.textContent = total;
+pendentesElemento.textContent = pendentesCount;
+concluidosElemento.textContent = concluidosCount;
+
+const taxaConclusaoElemento =
+    document.getElementById('taxa-conclusao-chamados');
+
+if (taxaConclusaoElemento) {
+    taxaConclusaoElemento.textContent =
+        `${taxaConclusao.toFixed(1)}%`;
+}
+
+if (mttrElemento) mttrElemento.textContent = mttrTexto;
+if (mtbfElemento) mtbfElemento.textContent = mtbfTexto;
     renderizarGraficos(listaParaExibir);
 }
 function renderizarGraficos(dados) {
