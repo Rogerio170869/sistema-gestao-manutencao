@@ -261,6 +261,7 @@ function atualizarDashboard(listaParaExibir = chamados) {
     const pendentesElemento = document.getElementById('pendentes-chamados');
     const concluidosElemento = document.getElementById('concluidos-chamados');
     const mttrElemento = document.getElementById('mttr-chamados');
+    const mtbfElemento = document.getElementById('mtbf-chamados');
 
     if (!totalElemento) return;
 
@@ -270,29 +271,87 @@ function atualizarDashboard(listaParaExibir = chamados) {
     const pendentesCount = total - concluidosCount;
 
     let mttrTexto = '0h';
+    let mtbfTexto = '0h';
 
-const chamadosComMTTR = chamadosConcluidos.filter(c =>
-    c.data_inicio_atendimento && c.data_conclusao
-);
+    // ==============================
+    // Cálculo do MTTR
+    // ==============================
 
-if (chamadosComMTTR.length > 0) {
-    const totalHoras = chamadosComMTTR.reduce((acc, c) => {
-        const diffMs =
-            new Date(c.data_conclusao) -
-            new Date(c.data_inicio_atendimento);
+    const chamadosComMTTR = chamadosConcluidos.filter(c =>
+        c.data_inicio_atendimento && c.data_conclusao
+    );
 
-        return acc + (diffMs / (1000 * 60 * 60));
-    }, 0);
+    if (chamadosComMTTR.length > 0) {
+        const totalHoras = chamadosComMTTR.reduce((acc, c) => {
+            const diffMs =
+                new Date(c.data_conclusao) -
+                new Date(c.data_inicio_atendimento);
 
-    const mttrMedio = (totalHoras / chamadosComMTTR.length).toFixed(1);
-    mttrTexto = `${mttrMedio}h`;
-}
+            return acc + (diffMs / (1000 * 60 * 60));
+        }, 0);
 
+        const mttrMedio = (totalHoras / chamadosComMTTR.length).toFixed(1);
+
+        mttrTexto = `${mttrMedio}h`;
+    }
+
+    // ==============================
+    // Cálculo do MTBF
+    // ==============================
+
+    const falhasPorEquipamento = {};
+
+    listaParaExibir
+        .filter(c =>
+            c.tipo === 'Corretiva' &&
+            c.data_abertura
+        )
+        .forEach(c => {
+
+            if (!falhasPorEquipamento[c.equipamento]) {
+                falhasPorEquipamento[c.equipamento] = [];
+            }
+
+            falhasPorEquipamento[c.equipamento].push(
+                new Date(c.data_abertura)
+            );
+        });
+
+    const intervalosMTBF = [];
+
+    Object.values(falhasPorEquipamento).forEach(datas => {
+
+        datas.sort((a, b) => a - b);
+
+        for (let i = 1; i < datas.length; i++) {
+
+            const diffMs = datas[i] - datas[i - 1];
+
+            const diffHoras = diffMs / (1000 * 60 * 60);
+
+            if (diffHoras >= 0) {
+                intervalosMTBF.push(diffHoras);
+            }
+        }
+    });
+
+    if (intervalosMTBF.length > 0) {
+
+        const totalIntervalos = intervalosMTBF.reduce(
+            (acc, horas) => acc + horas,
+            0
+        );
+
+        const mtbfMedio =
+            (totalIntervalos / intervalosMTBF.length).toFixed(1);
+
+        mtbfTexto = `${mtbfMedio}h`;
+    }
     totalElemento.textContent = total;
     pendentesElemento.textContent = pendentesCount;
     concluidosElemento.textContent = concluidosCount;
     if (mttrElemento) mttrElemento.textContent = mttrTexto;
-
+    if (mtbfElemento) mtbfElemento.textContent = mtbfTexto;
     renderizarGraficos(listaParaExibir);
 }
 function renderizarGraficos(dados) {
