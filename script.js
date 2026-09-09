@@ -27,7 +27,46 @@ async function fetchAutenticado(url, opcoes = {}) {
 }
 document.addEventListener('DOMContentLoaded', () => {
     verificarSessao();
+    // Filtros do Dashboard
+    const filtroDashboardDataInicio =
+        document.getElementById('filtroDataInicio');
 
+    const filtroDashboardDataFim =
+        document.getElementById('filtroDataFim');
+
+    const filtroDashboardEquipamento =
+        document.getElementById('filtroEquipamento');
+
+    const filtroDashboardTipo =
+        document.getElementById('filtroTipoManutencao');
+
+    if (filtroDashboardDataInicio) {
+        filtroDashboardDataInicio.addEventListener(
+            'change',
+            aplicarFiltrosDashboard
+        );
+    }
+
+    if (filtroDashboardDataFim) {
+        filtroDashboardDataFim.addEventListener(
+            'change',
+            aplicarFiltrosDashboard
+        );
+    }
+
+    if (filtroDashboardEquipamento) {
+        filtroDashboardEquipamento.addEventListener(
+            'change',
+            aplicarFiltrosDashboard
+        );
+    }
+
+    if (filtroDashboardTipo) {
+        filtroDashboardTipo.addEventListener(
+            'change',
+            aplicarFiltrosDashboard
+        );
+    }
     const formLogin = document.getElementById('form-login');
     const formEquipamento = document.getElementById('form-equipamento');
     const formChamado = document.getElementById('form-chamado');
@@ -243,8 +282,12 @@ if (resposta.status === 401) {
     throw new Error(`Erro HTTP ${resposta.status}`);
 }
 
-        chamados = await resposta.json();
-        filtrarChamados();
+chamados = await resposta.json();
+
+atualizarOpcoesEquipamentos();
+
+filtrarChamados();
+aplicarFiltrosDashboard();
     } catch (erro) {
         console.error('Erro ao buscar chamados da API:', erro);
     }
@@ -255,7 +298,86 @@ function formatarData(isoString) {
     const data = new Date(isoString);
     return data.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
+function aplicarFiltrosDashboard() {
+    const campoDataInicio =
+        document.getElementById('filtroDataInicio');
 
+    const campoDataFim =
+        document.getElementById('filtroDataFim');
+
+    const campoEquipamento =
+        document.getElementById('filtroEquipamento');
+
+    const campoTipo =
+        document.getElementById('filtroTipoManutencao');
+
+    const dataInicio = campoDataInicio && campoDataInicio.value
+        ? new Date(campoDataInicio.value + 'T00:00:00')
+        : null;
+
+    const dataFim = campoDataFim && campoDataFim.value
+        ? new Date(campoDataFim.value + 'T23:59:59')
+        : null;
+
+    const equipamento =
+        campoEquipamento ? campoEquipamento.value : '';
+
+    const tipo =
+        campoTipo ? campoTipo.value : '';
+
+    const dadosFiltrados = chamados.filter(chamado => {
+
+        // ==============================
+        // FILTRO DE EQUIPAMENTO
+        // ==============================
+
+        if (
+            equipamento &&
+            chamado.equipamento !== equipamento
+        ) {
+            return false;
+        }
+
+        // ==============================
+        // FILTRO DE TIPO
+        // ==============================
+
+        if (
+            tipo &&
+            chamado.tipo !== tipo
+        ) {
+            return false;
+        }
+
+        // ==============================
+        // FILTRO DE PERÍODO
+        // ==============================
+
+        if (chamado.data_abertura) {
+
+            const dataChamado =
+                new Date(chamado.data_abertura);
+
+            if (
+                dataInicio &&
+                dataChamado < dataInicio
+            ) {
+                return false;
+            }
+
+            if (
+                dataFim &&
+                dataChamado > dataFim
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    atualizarDashboard(dadosFiltrados);
+}
 function atualizarDashboard(listaParaExibir = chamados) {
     const totalElemento = document.getElementById('total-chamados');
     const pendentesElemento = document.getElementById('pendentes-chamados');
@@ -521,10 +643,7 @@ function renderizarTabela(listaParaExibir = chamados) {
 
         tabelaChamados.appendChild(novaLinha);
     });
-
-    atualizarDashboard(listaParaExibir);
 }
-
 function abrirModalEdicao(id) {
     const chamado = chamados.find(c => c.id === id);
     if (!chamado) return;
@@ -607,13 +726,82 @@ if (!resposta) {
         }
     }
 }
+function atualizarOpcoesEquipamentos() {
 
+    const campoEquipamento =
+        document.getElementById('filtroEquipamento');
+
+    if (!campoEquipamento) return;
+
+    const equipamentoAtual =
+        campoEquipamento.value;
+
+    const equipamentos = [
+        ...new Set(
+            chamados
+                .map(c => c.equipamento)
+                .filter(e => e && e.trim() !== '')
+        )
+    ].sort();
+
+    campoEquipamento.innerHTML = `
+        <option value="">
+            Todos os equipamentos
+        </option>
+    `;
+
+    equipamentos.forEach(equipamento => {
+
+        const option =
+            document.createElement('option');
+
+        option.value = equipamento;
+        option.textContent = equipamento;
+
+        campoEquipamento.appendChild(option);
+    });
+
+    if (equipamentos.includes(equipamentoAtual)) {
+        campoEquipamento.value = equipamentoAtual;
+    }
+}
+function limparFiltrosDashboard() {
+
+    const campoDataInicio =
+        document.getElementById('filtroDataInicio');
+
+    const campoDataFim =
+        document.getElementById('filtroDataFim');
+
+    const campoEquipamento =
+        document.getElementById('filtroEquipamento');
+
+    const campoTipo =
+        document.getElementById('filtroTipoManutencao');
+
+    if (campoDataInicio) {
+        campoDataInicio.value = '';
+    }
+
+    if (campoDataFim) {
+        campoDataFim.value = '';
+    }
+
+    if (campoEquipamento) {
+        campoEquipamento.value = '';
+    }
+
+    if (campoTipo) {
+        campoTipo.value = '';
+    }
+
+    atualizarDashboard(chamados);
+}
 function filtrarChamados() {
     const campoBusca = document.getElementById('filtro-busca');
     const campoStatus = document.getElementById('filtro-status');
     const campoDataInicio = document.getElementById('filtro-data-inicio');
     const campoDataFim = document.getElementById('filtro-data-fim');
-
     const termoBusca = campoBusca ? campoBusca.value.toLowerCase() : '';
     const statusFiltro = campoStatus ? campoStatus.value : 'todos';
     const dataInicio = campoDataInicio && campoDataInicio.value ? new Date(campoDataInicio.value) : null;

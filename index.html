@@ -365,7 +365,111 @@
 
 
                     <div style="background: #f3e8ff; padding: 15px; border-radius: 6px; flex: 1; min-width: 150px; text-align: center;">
+<!-- FILTROS DO DASHBOARD -->
+<div style="
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+">
 
+    <h3 style="margin-top: 0;">
+        Filtros do Dashboard
+    </h3>
+
+    <div style="
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: end;
+    ">
+
+        <!-- DATA INICIAL -->
+        <div>
+            <label for="filtroDataInicio">
+                Data inicial
+            </label>
+
+            <br>
+
+            <input
+                type="date"
+                id="filtroDataInicio"
+            >
+        </div>
+
+        <!-- DATA FINAL -->
+        <div>
+            <label for="filtroDataFim">
+                Data final
+            </label>
+
+            <br>
+
+            <input
+                type="date"
+                id="filtroDataFim"
+            >
+        </div>
+
+        <!-- EQUIPAMENTO -->
+        <div>
+            <label for="filtroEquipamento">
+                Equipamento
+            </label>
+
+            <br>
+
+            <select id="filtroEquipamento">
+                <option value="">
+                    Todos os equipamentos
+                </option>
+            </select>
+        </div>
+
+        <!-- TIPO -->
+        <div>
+            <label for="filtroTipoManutencao">
+                Tipo de manutenção
+            </label>
+
+            <br>
+
+            <select id="filtroTipoManutencao">
+
+                <option value="">
+                    Todos os tipos
+                </option>
+
+                <option value="Corretiva">
+                    Corretiva
+                </option>
+
+                <option value="Preventiva">
+                    Preventiva
+                </option>
+
+                <option value="Preditiva">
+                    Preditiva
+                </option>
+
+            </select>
+        </div>
+
+        <!-- LIMPAR -->
+        <div>
+            <button
+                type="button"
+                onclick="limparFiltrosDashboard()"
+            >
+                Limpar filtros
+            </button>
+        </div>
+
+    </div>
+
+</div>
                         <h3 style="color: #6b21a8; margin: 0;">
                             MTTR Médio
                         </h3>
