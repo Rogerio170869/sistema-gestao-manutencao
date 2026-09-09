@@ -5,6 +5,7 @@ let usuarioLogado = null;
 let chartTiposInstance = null;
 let chartPrioridadesInstance = null;
 let chartMTTRTiposInstance = null;
+let chartEquipamentosInstance = null;
 async function fetchAutenticado(url, opcoes = {}) {
     const token = sessionStorage.getItem('token_gestao_manutencao');
 
@@ -384,13 +385,18 @@ function atualizarDashboard(listaParaExibir = chamados) {
     const concluidosElemento = document.getElementById('concluidos-chamados');
     const mttrElemento = document.getElementById('mttr-chamados');
     const mtbfElemento = document.getElementById('mtbf-chamados');
-
+    const criticosAbertosElemento =
+    document.getElementById('criticos-abertos-chamados');
     if (!totalElemento) return;
 
     const total = listaParaExibir.length;
     const chamadosConcluidos = listaParaExibir.filter(c => c.status === 'Concluído');
     const concluidosCount = chamadosConcluidos.length;
     const pendentesCount = total - concluidosCount;
+    const criticosAbertos = listaParaExibir.filter(c =>
+    c.prioridade === 'Alta' &&
+    c.status !== 'Concluído'
+).length;
     const taxaConclusao = total > 0
     ? (concluidosCount / total) * 100
     : 0;
@@ -485,6 +491,9 @@ if (taxaConclusaoElemento) {
 
 if (mttrElemento) mttrElemento.textContent = mttrTexto;
 if (mtbfElemento) mtbfElemento.textContent = mtbfTexto;
+if (criticosAbertosElemento) {
+    criticosAbertosElemento.textContent = criticosAbertos;
+}
     renderizarGraficos(listaParaExibir);
 }
 function renderizarGraficos(dados) {
@@ -596,8 +605,66 @@ function renderizarGraficos(dados) {
             }
         });
     }
-}
 
+  // Equipamentos com mais falhas
+    const contagemEquipamentos = {};
+
+    dados.forEach(chamado => {
+
+        const equipamento = chamado.equipamento || 'Não informado';
+
+        contagemEquipamentos[equipamento] =
+            (contagemEquipamentos[equipamento] || 0) + 1;
+    });
+
+    const equipamentosOrdenados =
+        Object.entries(contagemEquipamentos)
+            .sort((a, b) => b[1] - a[1]);
+
+    const labelsEquipamentos =
+        equipamentosOrdenados.map(item => item[0]);
+
+    const valoresEquipamentos =
+        equipamentosOrdenados.map(item => item[1]);
+
+    const canvasEquipamentos =
+        document.getElementById('graficoEquipamentosFalhas');
+
+    if (canvasEquipamentos) {
+
+        if (chartEquipamentosInstance) {
+            chartEquipamentosInstance.destroy();
+        }
+
+        chartEquipamentosInstance =
+            new Chart(canvasEquipamentos, {
+                type: 'bar',
+                data: {
+                    labels: labelsEquipamentos,
+                    datasets: [{
+                        label: 'Quantidade de chamados',
+                        data: valoresEquipamentos
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+    }
+}
 function renderizarTabela(listaParaExibir = chamados) {
     const tabelaChamados = document.querySelector('#lista-chamados tbody');
     if (!tabelaChamados) return;

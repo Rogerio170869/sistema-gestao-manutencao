@@ -313,7 +313,21 @@
             <section id="dashboard" class="card">
 
                 <h2>Indicadores de Manutenção</h2>
+<div style="
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border: 1px solid #e2e8f0;
+">
 
+    <h3 style="margin-top: 0;">
+        Equipamentos com Mais Falhas
+    </h3>
+
+    <canvas id="graficoEquipamentosFalhas"></canvas>
+
+</div>
                 <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
 
                     <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; flex: 1; min-width: 150px; text-align: center;">
@@ -500,6 +514,20 @@
 
     <h3 style="color: #4338ca; margin: 0;">
         Taxa de Conclusão
+        <div style="background: #fee2e2; padding: 15px; border-radius: 6px; flex: 1; min-width: 150px; text-align: center;">
+
+    <h3 style="color: #b91c1c; margin: 0;">
+        Críticos em Aberto
+    </h3>
+
+    <span
+        id="criticos-abertos-chamados"
+        style="font-size: 24px; font-weight: bold;"
+    >
+        0
+    </span>
+
+</div>
     </h3>
 
     <span
