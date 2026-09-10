@@ -2,7 +2,7 @@
 
 Aplicação web para gerenciamento de chamados e atividades de manutenção, com autenticação de usuários, controle de perfis, API REST, banco de dados SQLite, indicadores operacionais e geração de relatórios.
 
-Projeto desenvolvido como parte de um portfólio prático voltado ao desenvolvimento de sistemas e aplicação de conceitos de análise, desenvolvimento, integração entre frontend e backend e gestão de informações de manutenção.
+Projeto desenvolvido como parte de um portfólio prático voltado ao desenvolvimento de sistemas, aplicando conceitos de análise, desenvolvimento, integração entre frontend e backend e gestão de informações de manutenção.
 
 ---
 
@@ -10,7 +10,7 @@ Projeto desenvolvido como parte de um portfólio prático voltado ao desenvolvim
 
 O **Sistema de Gestão de Manutenção** foi desenvolvido para representar um cenário de manutenção industrial, permitindo centralizar informações relacionadas aos chamados e às ordens de serviço.
 
-A aplicação possibilita registrar ocorrências, acompanhar o andamento dos chamados, atribuir técnicos, registrar soluções executadas e analisar indicadores operacionais.
+A aplicação permite que usuários registrem e acompanhem o andamento dos chamados, atribuam técnicos, registrem soluções executadas e analisem indicadores operacionais.
 
 O projeto também contempla recursos de autenticação e autorização, validação de dados no backend e testes automatizados.
 
@@ -27,9 +27,9 @@ O sistema foi desenvolvido com os seguintes objetivos:
 * Registrar soluções executadas;
 * Disponibilizar filtros e consultas;
 * Apresentar indicadores de manutenção;
-* Gerar relatórios;
+* Gerar relatórios operacionais;
 * Aplicar autenticação e controle de acesso;
-* Praticar desenvolvimento de uma aplicação full stack.
+* Praticar o desenvolvimento de uma aplicação full stack.
 
 ---
 
@@ -54,10 +54,10 @@ O sistema foi desenvolvido com os seguintes objetivos:
 * Cadastro de equipamento;
 * Classificação do tipo de manutenção;
 * Definição de prioridade;
-* Alteração de status;
+* Definição de status;
 * Atribuição de técnico;
 * Registro da solução executada;
-* Registro das datas de abertura e conclusão;
+* Registro dos dados de abertura e conclusão;
 * Exclusão de chamados.
 
 ### 🔎 Consulta e filtros
@@ -68,7 +68,7 @@ O sistema foi desenvolvido com os seguintes objetivos:
 * Atualização dinâmica dos dados;
 * Consulta dos chamados cadastrados.
 
-### 📊 Dashboard
+### 📊 Painel de controle
 
 O sistema apresenta indicadores para acompanhamento da operação de manutenção:
 
@@ -87,7 +87,7 @@ O sistema apresenta indicadores para acompanhamento da operação de manutençã
 
 * Geração de relatório visual;
 * Exportação para PDF;
-* Formato A4 em orientação paisagem;
+* Formato A4 em orientação horizontal;
 * Informações detalhadas dos chamados.
 
 ---
@@ -121,12 +121,12 @@ A aplicação utiliza uma arquitetura baseada na separação entre interface, AP
 
 ## 💻 Tecnologias utilizadas
 
-### Frontend
+### Front-end
 
 * HTML5
 * CSS3
 * JavaScript
-* Fetch API
+* API Fetch
 * Chart.js
 
 ### Backend
@@ -160,7 +160,7 @@ A aplicação utiliza uma arquitetura baseada na separação entre interface, AP
 
 O projeto possui testes automatizados para validação das principais funcionalidades da API.
 
-Status atual:
+Situação atual:
 
 ```text
 Test Suites: 1 passed, 1 total
@@ -177,8 +177,8 @@ Os testes abrangem funcionalidades relacionadas a:
 * Autorização por perfil;
 * Operações com chamados;
 * Validação de dados;
-* Alteração de status;
-* Registro de conclusão;
+* Controle de status;
+* Registro de chamados;
 * Regras de negócio.
 
 Para executar os testes:
@@ -229,7 +229,7 @@ DEFAULT_ADMIN_PASSWORD=defina_uma_senha
 node server.js
 ```
 
-A API será disponibilizada localmente na porta configurada pelo projeto.
+Uma API será disponibilizada localmente na porta configurada pelo projeto.
 
 ---
 
@@ -256,18 +256,18 @@ Arquivos gerados localmente, como banco de dados SQLite, dependências e informa
 
 ## 🔒 Boas práticas aplicadas
 
-Durante o desenvolvimento foram aplicadas algumas práticas de segurança e organização:
+Durante o desenvolvimento foram aplicadas práticas de segurança e organização:
 
 * Senhas não armazenadas em texto puro;
 * Autenticação utilizando JWT;
-* Variáveis sensíveis configuradas por `.env`;
-* `.env` incluído no `.gitignore`;
+* Variáveis sensíveis definidas por `.env`;
+* `.env` não incluído no repositório;
 * Banco de dados local não versionado;
 * Diretório `node_modules` não versionado;
 * Validação de entradas no backend;
 * Validação dos valores permitidos para tipo e prioridade;
 * Controle de acesso baseado em perfil;
-* Configuração restritiva de CORS;
+* Configuração restritiva do CORS;
 * Testes automatizados para validação das funcionalidades.
 
 ---
@@ -278,11 +278,11 @@ O sistema utiliza indicadores normalmente associados à gestão de manutenção,
 
 Entre os indicadores implementados estão:
 
-**MTTR — Mean Time To Repair**
+**MTTR — Tempo Médio para Reparo**
 
 Representa o tempo médio utilizado para reparo dos equipamentos.
 
-**MTBF — Mean Time Between Failures**
+**MTBF — Tempo Médio Entre Falhas**
 
 Representa o intervalo médio entre falhas.
 
@@ -307,11 +307,10 @@ Este projeto foi desenvolvido com foco na demonstração prática de conheciment
 * Autenticação e autorização;
 * Segurança básica de aplicações;
 * Testes automatizados;
-* Indicadores de manutenção;
 * Git e GitHub;
 * Organização e documentação de projetos.
 
-Além do desenvolvimento do software, o projeto busca demonstrar a integração entre **conhecimento técnico de manutenção industrial e desenvolvimento de sistemas**.
+Além do desenvolvimento de software, o projeto busca demonstrar a integração entre **conhecimento técnico de manutenção industrial e desenvolvimento de sistemas**.
 
 ---
 
