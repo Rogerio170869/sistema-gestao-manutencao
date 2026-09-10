@@ -1,5 +1,10 @@
 require('dotenv').config();
 
+if (!process.env.JWT_SECRET) {
+    throw new Error(
+        'JWT_SECRET não configurado. Defina JWT_SECRET no arquivo .env.'
+    );
+}
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
@@ -94,7 +99,14 @@ function autorizarGestor(req, res, next) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500'
+    ]
+}));
 app.use(express.json());
 
 // ===============================
@@ -286,53 +298,82 @@ if (!colunaDataInicioAtendimentoExiste) {
         // USUÁRIOS PADRÃO
         // ===============================
 
-        bcrypt.hash(
-            '123456',
-            10,
-            (hashErr, hashSenha) => {
+        const senhaOperador =
+    process.env.DEFAULT_OPERATOR_PASSWORD ||
+    (process.env.NODE_ENV === 'test' ? '123456' : null);
 
-                if (hashErr) {
+const senhaAdmin =
+    process.env.DEFAULT_ADMIN_PASSWORD ||
+    (process.env.NODE_ENV === 'test' ? '123456' : null);
 
-                    console.error(
-                        'Erro ao gerar hash das senhas padrão:',
-                        hashErr.message
-                    );
+if (!senhaOperador || !senhaAdmin) {
+    console.warn(
+        'Usuários padrão não foram criados. ' +
+        'Defina DEFAULT_OPERATOR_PASSWORD e DEFAULT_ADMIN_PASSWORD no arquivo .env.'
+    );
+} else {
+    bcrypt.hash(
+        senhaOperador,
+        10,
+        (hashErr, hashSenhaOperador) => {
 
-                    return;
-                }
-
-                // Usuário operador
-                db.run(
-                    `
-                    INSERT OR IGNORE INTO usuarios
-                    (usuario, senha, nome, perfil)
-                    VALUES (?, ?, ?, ?)
-                    `,
-                    [
-                        'operador',
-                        hashSenha,
-                        'Operador de Produção',
-                        'operador'
-                    ]
+            if (hashErr) {
+                console.error(
+                    'Erro ao gerar hash da senha do operador:',
+                    hashErr.message
                 );
 
-                // Usuário administrador
-                db.run(
-                    `
-                    INSERT OR IGNORE INTO usuarios
-                    (usuario, senha, nome, perfil)
-                    VALUES (?, ?, ?, ?)
-                    `,
-                    [
-                        'admin',
-                        hashSenha,
-                        'Gestor de Manutenção',
-                        'gestor'
-                    ]
-                );
-
+                return;
             }
-        );
+
+            // Usuário operador
+            db.run(
+                `
+                INSERT OR IGNORE INTO usuarios
+                (usuario, senha, nome, perfil)
+                VALUES (?, ?, ?, ?)
+                `,
+                [
+                    'operador',
+                    hashSenhaOperador,
+                    'Operador de Produção',
+                    'operador'
+                ]
+            );
+
+            bcrypt.hash(
+                senhaAdmin,
+                10,
+                (hashErrAdmin, hashSenhaAdmin) => {
+
+                    if (hashErrAdmin) {
+                        console.error(
+                            'Erro ao gerar hash da senha do administrador:',
+                            hashErrAdmin.message
+                        );
+
+                        return;
+                    }
+
+                    // Usuário administrador
+                    db.run(
+                        `
+                        INSERT OR IGNORE INTO usuarios
+                        (usuario, senha, nome, perfil)
+                        VALUES (?, ?, ?, ?)
+                        `,
+                        [
+                            'admin',
+                            hashSenhaAdmin,
+                            'Gestor de Manutenção',
+                            'gestor'
+                        ]
+                    );
+                }
+            );
+        }
+    );
+}
 
     });
 
@@ -365,6 +406,30 @@ function validarChamado(body) {
     if (!prioridade || !String(prioridade).trim()) {
 
         return 'O campo prioridade é obrigatório.';
+
+    }
+
+    const tiposPermitidos = [
+        'Corretiva',
+        'Preventiva',
+        'Preditiva'
+    ];
+
+    if (!tiposPermitidos.includes(String(tipo).trim())) {
+
+        return 'Tipo de manutenção inválido.';
+
+    }
+
+    const prioridadesPermitidas = [
+        'Alta',
+        'Média',
+        'Baixa'
+    ];
+
+    if (!prioridadesPermitidas.includes(String(prioridade).trim())) {
+
+        return 'Prioridade inválida.';
 
     }
 
